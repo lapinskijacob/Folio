@@ -109,6 +109,21 @@ header{position:sticky;top:0;z-index:20;background:rgba(0,0,0,.82);-webkit-backd
 .xbadge{background:var(--x);color:#fff;font-size:11px;font-weight:800;padding:3px 7px;border-radius:6px}
 
 /* ---------- viewer ---------- */
+body.fs{overflow:hidden}
+body.fs header{position:fixed;left:0;right:0;top:0;background:linear-gradient(rgba(0,0,0,.8),rgba(0,0,0,0));-webkit-backdrop-filter:none;backdrop-filter:none;pointer-events:none}
+body.fs header .hrow,body.fs header .bar{pointer-events:auto}
+body.fs .profile{display:none}
+body.fs #feed{max-width:none;margin:0;height:100vh;height:100dvh;overflow-y:auto;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+body.fs #feed::-webkit-scrollbar{display:none}
+body.fs .fpost{height:100vh;height:100dvh;scroll-snap-align:start;scroll-snap-stop:always;padding:0;position:relative;overflow:hidden}
+body.fs .fpost .car{position:absolute;inset:0}
+body.fs .fpost .track{height:100%}
+body.fs .fpost .slide{aspect-ratio:auto!important;height:100%}
+body.fs .fpost .fhead{position:absolute;left:0;right:0;top:calc(var(--sat) + 104px);z-index:3}
+body.fs .fsinfo{position:absolute;left:0;right:0;bottom:0;z-index:3;padding:46px 4px calc(var(--sab) + 6px);background:linear-gradient(transparent,rgba(0,0,0,.9));pointer-events:none}
+body.fs .fsinfo>*{pointer-events:auto}
+body.fs .fsinfo .dots{padding-bottom:6px}
+body.fs .snd{position:absolute;right:14px;bottom:calc(var(--sab) + 128px);z-index:4;width:44px;height:44px;border-radius:22px;background:rgba(0,0,0,.45);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:grid;place-items:center}
 #viewer{position:fixed;inset:0;z-index:40;background:#000;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .28s cubic-bezier(.2,.8,.2,1)}
 #viewer.open{transform:none}
 .vbar{display:flex;align-items:center;gap:8px;padding:calc(var(--sat) + 4px) 8px 4px;flex:none}
@@ -281,7 +296,7 @@ body.selecting #toast{bottom:calc(var(--sab) + 84px)}
    Data lives only in this app's storage on the device.
    ========================================================= */
 
-const VERSION = '2.0.0';
+const VERSION = '2.2.0';
 
 /* ---------- icons ---------- */
 const I = {
@@ -732,6 +747,15 @@ function thumbImg(itemId, cls) {
 
 /* full media loading for carousels */
 const mediaURL = new Map(); // slide element -> url
+/* Re-shape a feed slide from the media's real dimensions. Covers items whose
+   stored w/h are missing or wrong (e.g. a video whose metadata failed to read,
+   or a rotated clip). Single-item posts only, so a carousel keeps one height. */
+function fitSlide(slide, w, h) {
+  if (!(w > 0 && h > 0) || !slide.style.aspectRatio) return;
+  if (!slide.parentElement || slide.parentElement.children.length !== 1) return;
+  const r = Math.max(0.5, Math.min(1.91, w / h));
+  if (Math.abs(parseFloat(slide.style.aspectRatio) - r) > 0.01) slide.style.aspectRatio = String(r);
+}
 function loadSlide(slide) {
   if (slide.dataset.loaded) return;
   const it = JSON.parse(slide.dataset.item);
@@ -745,6 +769,7 @@ function loadSlide(slide) {
       if (slide.dataset.autoplay) startVideo(slide);
     } else {
       const img = h('img', { src: u, alt: '', decoding: 'async' });
+      img.addEventListener('load', () => fitSlide(slide, img.naturalWidth, img.naturalHeight));
       slide.querySelector('img.ph')?.remove();
       slide.prepend(img);
     }
@@ -769,12 +794,16 @@ const mediaIO = new IntersectionObserver(es => {
 function startVideo(slide) {
   if (!slide.dataset.src) { slide.dataset.autoplay = '1'; loadSlide(slide); return; }
   delete slide.dataset.autoplay;
+  const auto = document.body.classList.contains('fs') && slide.closest('#feed');
   let v = slide.querySelector('video');
   if (!v) {
-    v = h('video', { controls: true, playsinline: true, 'webkit-playsinline': true, preload: 'metadata' });
+    v = h('video', { controls: !auto, playsinline: true, 'webkit-playsinline': true, preload: 'metadata' });
+    if (auto) { v.loop = true; v.muted = !soundOn; v.setAttribute('muted', ''); }
     v.src = slide.dataset.src;
     slide.append(v);
   }
+  if (auto) v.muted = !soundOn;
+  v.addEventListener('loadedmetadata', () => fitSlide(slide, v.videoWidth, v.videoHeight), { once: true });
   slide.querySelector('.poster')?.classList.add('hidden');
   slide.querySelector('.play')?.classList.add('hidden');
   pauseAll();
@@ -828,7 +857,9 @@ function render() {
   const list = visiblePosts();
   const grid = $('#grid'), feed = $('#feed'), empty = $('#empty');
   // release media from previous feed
+  feed.querySelectorAll('.fpost').forEach(a => postIO.unobserve(a));
   feed.querySelectorAll('.slide').forEach(s => { mediaIO.unobserve(s); s.querySelector('video')?.pause(); unloadSlideForce(s); });
+  document.body.classList.remove('fs');
   grid.innerHTML = ''; feed.innerHTML = '';
   empty.classList.toggle('hidden', list.length > 0);
   if (!list.length) { renderEmpty(); grid.classList.add('hidden'); feed.classList.add('hidden'); return; }
@@ -839,9 +870,11 @@ function render() {
     grid.append(frag);
   } else {
     feed.classList.remove('hidden'); grid.classList.add('hidden');
+    document.body.classList.add('fs');
     const frag = document.createDocumentFragment();
     for (const p of list) frag.append(feedPost(p));
     feed.append(frag);
+    feed.querySelectorAll('.fpost').forEach(a => postIO.observe(a));
   }
 }
 function unloadSlideForce(s) { const v = s.querySelector('video'); if (v) v.pause(); delete s.dataset.loaded; const u = mediaURL.get(s); if (u) { URL.revokeObjectURL(u); mediaURL.delete(s); } }
@@ -955,15 +988,50 @@ function postRatio(items) {
   if (!r) return '4/5';
   return String(Math.max(0.5, Math.min(1.91, r)));
 }
+/* Full-screen feed: autoplay anything shorter than this, muted until the
+   viewer taps the sound button (iOS blocks audio without a gesture). */
+const AUTOPLAY_MAX_SEC = 180;
+let soundOn = false;
+const I_SND_ON = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
+const I_SND_OFF = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="22" y1="9" x2="16" y2="15"/><line x1="16" y1="9" x2="22" y2="15"/></svg>';
+function soundBtn() {
+  const b = h('button', { class: 'snd', html: soundOn ? I_SND_ON : I_SND_OFF, 'aria-label': 'Sound on or off' });
+  b.onclick = e => {
+    e.stopPropagation();
+    soundOn = !soundOn;
+    document.querySelectorAll('#feed video').forEach(v => { v.muted = !soundOn; });
+    document.querySelectorAll('.snd').forEach(x => { x.innerHTML = soundOn ? I_SND_ON : I_SND_OFF; });
+  };
+  return b;
+}
+/* Play the post that has scrolled into place; pause the ones that left. */
+const postIO = new IntersectionObserver(es => {
+  es.forEach(e => {
+    if (e.isIntersecting && e.intersectionRatio >= 0.6) autoplayPost(e.target);
+    else e.target.querySelectorAll('video').forEach(v => { try { v.pause(); } catch {} });
+  });
+}, { threshold: [0, 0.6] });
+function autoplayPost(post) {
+  const track = post.querySelector('.track');
+  if (!track) return;
+  const i = Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
+  const slide = track.children[i] || track.children[0];
+  if (!slide || !slide.dataset.item) return;
+  let it; try { it = JSON.parse(slide.dataset.item); } catch { return; }
+  if (it.type !== 'video') return;
+  if (it.dur && it.dur > AUTOPLAY_MAX_SEC) return;
+  startVideo(slide);
+}
 function feedPost(p) {
   const items = visItems(p);
   const car = buildCarousel(p, items);
   const ar = postRatio(items);
   car.querySelectorAll('.slide').forEach(s => { s.style.aspectRatio = ar; });
-  const box = h('article', { class: 'fpost' },
-    h('div', { class: 'fhead' }, h('div', { class: 'mini' }, initial(p.creators[0] || '?')), whoLine(p),
-      h('button', { class: 'ibtn', html: I.more, 'aria-label': 'Post options', onclick: () => postMenu(p, car) })),
-    car, car._dots, ...metaBlock(p, items));
+  const head = h('div', { class: 'fhead' }, h('div', { class: 'mini' }, initial(p.creators[0] || '?')), whoLine(p),
+    h('button', { class: 'ibtn', html: I.more, 'aria-label': 'Post options', onclick: () => postMenu(p, car) }));
+  const info = h('div', { class: 'fsinfo' }, car._dots, ...metaBlock(p, items));
+  const box = h('article', { class: 'fpost' }, car, head, info);
+  if (items.some(i => i.type === 'video')) box.append(soundBtn());
   return box;
 }
 
