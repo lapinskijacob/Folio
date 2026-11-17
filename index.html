@@ -453,7 +453,7 @@ async function removeItemData(itemId) {
 
 /* ---------- state ---------- */
 let posts = [];                // decrypted, in memory only while unlocked
-let settings = { view: 'grid', sort: 'date-desc', lockDelay: 0 };
+let settings = { view: 'grid', sort: 'date-desc', lockDelay: 300 };
 let xMode = 'off';            // 'off' | 'on' | 'only'
 let filters = [];             // [{type:'creator'|'tag'|'text'|'missing', value}]
 let favOnly = false;
@@ -944,9 +944,22 @@ function metaBlock(p, items) {
   return [acts, meta];
 }
 
+/* Aspect ratio for a feed post: the tallest item it holds, so nothing is
+   cropped and tall photos/videos get their full height. Clamped so a very
+   long panorama can't take over the whole screen. */
+function postRatio(items) {
+  let r = 0;
+  for (const it of items) {
+    if (it.w > 0 && it.h > 0) { const v = it.w / it.h; if (!r || v < r) r = v; }
+  }
+  if (!r) return '4/5';
+  return String(Math.max(0.5, Math.min(1.91, r)));
+}
 function feedPost(p) {
   const items = visItems(p);
   const car = buildCarousel(p, items);
+  const ar = postRatio(items);
+  car.querySelectorAll('.slide').forEach(s => { s.style.aspectRatio = ar; });
   const box = h('article', { class: 'fpost' },
     h('div', { class: 'fhead' }, h('div', { class: 'mini' }, initial(p.creators[0] || '?')), whoLine(p),
       h('button', { class: 'ibtn', html: I.more, 'aria-label': 'Post options', onclick: () => postMenu(p, car) })),
@@ -1122,10 +1135,6 @@ function openXMenu() {
 async function setX(mode) {
   closeSheet();
   if (mode === xMode) return;
-  if (mode !== 'off' && xMode === 'off') {
-    const ok = await askPass('Show X content', true, () => {});
-    if (!ok) return;
-  }
   xMode = mode;
   filters = filters.filter(f => (f.type !== 'tag' && f.type !== 'creator') || indexOf(f.type).some(x => fKey(f) === (f.type === 'tag' ? x.name : key(x.name))));
   render();
@@ -1539,7 +1548,6 @@ function manageList(type) {
    Large libraries are split into parts of about 1.5 GB so iPhone can save them. */
 const PART_MAX = 1.5 * 1024 ** 3;
 async function exportBackup() {
-  if (!(await askPass('Confirm to export', true, () => {}))) return;
   busyOps++;
   const prog = progress('Preparing backup…');
   try {
