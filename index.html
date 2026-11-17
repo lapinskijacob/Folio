@@ -1,0 +1,1686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Folio">
+<meta name="theme-color" content="#000000">
+<meta name="robots" content="noindex, nofollow">
+<title>Folio</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<style>
+:root{
+  --bg:#000; --s1:#0e0e0f; --s2:#1a1a1c; --s3:#26262a; --line:#232326;
+  --text:#f5f5f7; --muted:#9a9aa0; --dim:#5d5d63;
+  --x:#ff2d55; --heart:#ff3040; --ok:#30d158;
+  --sat:env(safe-area-inset-top); --sab:env(safe-area-inset-bottom);
+  --r:14px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);height:100%}
+body{font:15px/1.35 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",sans-serif;-webkit-font-smoothing:antialiased;overscroll-behavior-y:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea{-webkit-user-select:text;user-select:text}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+svg{display:block}
+.hidden{display:none!important}
+
+/* privacy cover when app is backgrounded */
+#cover{position:fixed;inset:0;background:#000;z-index:999;display:none}
+body.covered #cover{display:block}
+
+/* ---------- header ---------- */
+#app{min-height:100%}
+header{position:sticky;top:0;z-index:20;background:rgba(0,0,0,.82);-webkit-backdrop-filter:saturate(1.6) blur(18px);backdrop-filter:saturate(1.6) blur(18px);padding:calc(var(--sat) + 6px) 14px 0}
+.hrow{display:flex;align-items:center;height:46px;gap:4px}
+.brand{font-size:24px;font-weight:700;letter-spacing:-.6px;flex:1}
+.ibtn{width:40px;height:40px;display:grid;place-items:center;border-radius:20px}
+.ibtn:active{background:var(--s2)}
+.xpill{height:30px;min-width:38px;padding:0 10px;border-radius:15px;border:1.5px solid var(--dim);color:var(--muted);font-weight:800;font-size:14px;display:flex;align-items:center;gap:6px;margin-right:4px;transition:.15s}
+.xpill.on{border-color:var(--x);color:#fff;background:var(--x)}
+.xpill.only{border-color:var(--x);color:var(--x);background:rgba(255,45,85,.12)}
+.xpill small{font-size:10px;font-weight:800;letter-spacing:.6px}
+
+.bar{display:flex;align-items:center;gap:8px;padding:6px 0 10px;overflow-x:auto;scrollbar-width:none}
+.bar::-webkit-scrollbar{display:none}
+.seg{display:flex;background:var(--s2);border-radius:10px;padding:2px;flex:none}
+.seg button{width:36px;height:30px;border-radius:8px;display:grid;place-items:center;color:var(--muted)}
+.seg button.act{background:var(--s3);color:var(--text)}
+.chip{flex:none;height:32px;padding:0 12px;border-radius:16px;background:var(--s2);color:var(--text);display:flex;align-items:center;gap:6px;font-size:14px;font-weight:500;white-space:nowrap}
+.chip.act{background:var(--text);color:#000}
+.chip .x{opacity:.7;margin-left:2px}
+.chip.fav.act{background:var(--heart);color:#fff}
+.sortsel{flex:none;margin-left:auto;height:32px;border-radius:16px;background:var(--s2);color:var(--muted);border:0;padding:0 12px;font:inherit;font-size:13px;-webkit-appearance:none;appearance:none}
+
+/* ---------- profile / stats ---------- */
+.profile{display:flex;align-items:center;gap:16px;padding:14px 16px 16px}
+.avatar{width:72px;height:72px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:30px;font-weight:700;color:#fff;background:linear-gradient(135deg,#3a3a40,#16161a);border:2px solid var(--s3)}
+.avatar.tag{font-size:34px;font-weight:400}
+.pname{font-size:20px;font-weight:700;letter-spacing:-.3px;word-break:break-word}
+.pstats{display:flex;gap:16px;margin-top:6px;color:var(--muted);font-size:13px}
+.pstats b{color:var(--text);font-weight:600}
+.plink{margin-top:8px;font-size:13px;color:var(--muted);text-decoration:underline}
+
+/* ---------- grid ---------- */
+#grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px}
+.tile{position:relative;aspect-ratio:1;background:var(--s1);overflow:hidden}
+.tile img{width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .25s}
+.tile img.ld{opacity:1}
+.tile .ic{position:absolute;top:7px;right:7px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
+.tile .dur{position:absolute;bottom:6px;left:7px;font-size:12px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8);display:flex;align-items:center;gap:3px}
+.tile .xb{position:absolute;top:7px;left:7px;background:var(--x);color:#fff;font-size:10px;font-weight:800;padding:2px 5px;border-radius:5px}
+.tile .fv{position:absolute;bottom:6px;right:7px}
+.tile:active{opacity:.75}
+
+/* ---------- feed ---------- */
+#feed{max-width:640px;margin:0 auto}
+.fpost{padding-bottom:18px}
+.fhead{display:flex;align-items:center;gap:10px;padding:10px 12px}
+.mini{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:14px;background:linear-gradient(135deg,#3a3a40,#16161a);flex:none}
+.fwho{flex:1;min-width:0;font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fwho span{cursor:pointer}
+.fwho .sub{display:block;font-weight:400;color:var(--muted);font-size:12px}
+
+/* ---------- carousel (shared by feed + viewer) ---------- */
+.car{position:relative}
+.track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.track::-webkit-scrollbar{display:none}
+.slide{flex:0 0 100%;scroll-snap-align:center;scroll-snap-stop:always;position:relative;display:grid;place-items:center;background:#000;overflow:hidden}
+.fpost .slide{aspect-ratio:4/5}
+.slide img,.slide video{max-width:100%;max-height:100%;width:100%;height:100%;object-fit:contain}
+.slide .poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(.8)}
+.slide .play{position:absolute;width:64px;height:64px;border-radius:50%;background:rgba(0,0,0,.45);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:grid;place-items:center}
+.slide .sxb{position:absolute;top:10px;left:10px;background:var(--x);color:#fff;font-size:11px;font-weight:800;padding:3px 6px;border-radius:6px;z-index:2}
+.count{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.6);font-size:12px;font-weight:600;padding:3px 9px;border-radius:12px;z-index:2}
+.dots{display:flex;justify-content:center;gap:4px;padding:10px 0 2px;min-height:18px}
+.dots i{width:6px;height:6px;border-radius:3px;background:var(--dim);transition:.2s}
+.dots i.on{background:#fff;width:14px}
+.acts{display:flex;align-items:center;gap:6px;padding:0 8px}
+.acts .sp{flex:1}
+.meta{padding:2px 14px 0;font-size:14px}
+.meta .date{color:var(--muted);font-size:12px;margin-top:6px;text-transform:uppercase;letter-spacing:.3px}
+.tags{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:4px}
+.tags a{color:#8ab4ff;cursor:pointer}
+.creators a{font-weight:600;cursor:pointer;margin-right:8px}
+.xbadge{background:var(--x);color:#fff;font-size:11px;font-weight:800;padding:3px 7px;border-radius:6px}
+
+/* ---------- viewer ---------- */
+#viewer{position:fixed;inset:0;z-index:40;background:#000;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .28s cubic-bezier(.2,.8,.2,1)}
+#viewer.open{transform:none}
+.vbar{display:flex;align-items:center;gap:8px;padding:calc(var(--sat) + 4px) 8px 4px;flex:none}
+.vbar .fwho{font-size:15px}
+#viewer .car{flex:1;min-height:0;display:flex;flex-direction:column}
+#viewer .track{flex:1;min-height:0}
+#viewer .slide{height:100%}
+.vfoot{flex:none;padding-bottom:calc(var(--sab) + 10px)}
+
+/* ---------- sheets ---------- */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:50;opacity:0;transition:opacity .2s}
+.scrim.open{opacity:1}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:51;background:var(--s1);border-radius:18px 18px 0 0;padding:8px 16px calc(var(--sab) + 16px);transform:translateY(100%);transition:transform .28s cubic-bezier(.2,.8,.2,1);max-height:92vh;overflow-y:auto}
+.sheet.open{transform:none}
+.grab{width:38px;height:5px;border-radius:3px;background:var(--s3);margin:0 auto 12px}
+.sheet h3{margin:4px 0 14px;font-size:17px;text-align:center}
+.opt{display:flex;align-items:center;gap:12px;width:100%;padding:14px;border-radius:12px;background:var(--s2);margin-bottom:8px;text-align:left}
+.opt .t{font-weight:600}
+.opt .d{color:var(--muted);font-size:13px;margin-top:2px}
+.opt .rad{margin-left:auto;width:22px;height:22px;border-radius:50%;border:2px solid var(--dim);flex:none}
+.opt.sel .rad{border:7px solid var(--x)}
+.opt.danger{color:var(--heart)}
+
+/* full-screen pages (editor, search, settings) */
+.page{position:fixed;inset:0;z-index:45;background:var(--bg);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .28s cubic-bezier(.2,.8,.2,1)}
+.page.open{transform:none}
+.page.up{transform:translateY(100%)}
+.page.up.open{transform:none}
+.ptop{display:flex;align-items:center;gap:8px;padding:calc(var(--sat) + 6px) 12px 8px;border-bottom:1px solid var(--line);flex:none}
+.ptop h2{flex:1;text-align:center;font-size:16px;margin:0}
+.tbtn{font-weight:600;padding:8px 6px;min-width:60px}
+.tbtn.pri{color:#4ea1ff;text-align:right}
+.tbtn:disabled{opacity:.35}
+.pbody{flex:1;overflow-y:auto;padding:14px 16px calc(var(--sab) + 30px);-webkit-overflow-scrolling:touch}
+
+.lbl{color:var(--muted);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin:22px 4px 8px}
+.card{background:var(--s1);border-radius:var(--r);overflow:hidden}
+.row{display:flex;align-items:center;gap:12px;padding:13px 14px;min-height:50px;border-bottom:1px solid var(--line);width:100%;text-align:left}
+.row:last-child{border-bottom:0}
+.row .grow{flex:1;min-width:0}
+.row .sub{color:var(--muted);font-size:13px}
+.row .val{color:var(--muted)}
+button.row:active{background:var(--s2)}
+.sw{position:relative;width:51px;height:31px;border-radius:16px;background:var(--s3);flex:none;transition:.2s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 2px 4px rgba(0,0,0,.3)}
+.sw.on{background:var(--x)}
+.sw.on::after{transform:translateX(20px)}
+.sw.green.on{background:var(--ok)}
+
+/* editor media strip */
+.strip{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.mi{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--s2)}
+.mi img{width:100%;height:100%;object-fit:cover}
+.mi.isx img{filter:brightness(.55)}
+.mi .ctl{position:absolute;inset:auto 0 0 0;display:flex;justify-content:space-between;padding:5px;background:linear-gradient(transparent,rgba(0,0,0,.75))}
+.mi .ctl button{width:28px;height:28px;border-radius:14px;background:rgba(0,0,0,.55);display:grid;place-items:center;font-size:12px;font-weight:800}
+.mi .ctl button.xon{background:var(--x)}
+.mi .del{position:absolute;top:5px;right:5px;width:26px;height:26px;border-radius:13px;background:rgba(0,0,0,.6);display:grid;place-items:center}
+.mi .num{position:absolute;top:5px;left:6px;font-size:11px;font-weight:700;text-shadow:0 1px 2px #000}
+.mi .vd{position:absolute;top:30px;left:6px;font-size:11px;font-weight:600;text-shadow:0 1px 2px #000}
+.mi.add{display:grid;place-items:center;border:1.5px dashed var(--s3);background:transparent;color:var(--muted);font-size:13px;text-align:center}
+.mi.busy{display:grid;place-items:center}
+.spin{width:22px;height:22px;border-radius:50%;border:2.5px solid var(--s3);border-top-color:#fff;animation:sp 0.8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.hint{color:var(--muted);font-size:12px;margin:8px 4px 0;line-height:1.4}
+
+/* chip input */
+.cin{display:flex;flex-wrap:wrap;gap:6px;padding:10px;background:var(--s1);border-radius:var(--r);min-height:50px;align-items:center}
+.cin .c{display:flex;align-items:center;gap:4px;background:var(--s3);border-radius:14px;padding:5px 8px 5px 11px;font-size:14px}
+.cin .c button{width:18px;height:18px;display:grid;place-items:center;opacity:.7}
+.cin input{flex:1;min-width:110px;background:transparent;border:0;outline:0;color:var(--text);font:inherit;font-size:16px;padding:5px 4px}
+.sugs{display:flex;gap:6px;overflow-x:auto;padding:8px 0 0;scrollbar-width:none}
+.sugs::-webkit-scrollbar{display:none}
+.sugs button{flex:none;background:var(--s2);border-radius:14px;padding:6px 11px;font-size:13px;color:var(--muted)}
+.field{width:100%;background:var(--s1);border:0;border-radius:var(--r);padding:14px;color:var(--text);font:inherit;font-size:16px;-webkit-appearance:none;appearance:none;min-height:50px}
+.field::-webkit-date-and-time-value{text-align:left}
+
+/* search */
+.sbox{flex:1;display:flex;align-items:center;gap:8px;background:var(--s2);border-radius:12px;padding:0 12px;height:40px}
+.sbox input{flex:1;background:transparent;border:0;outline:0;color:var(--text);font:inherit;font-size:16px}
+.res{display:flex;align-items:center;gap:12px;padding:10px 4px;width:100%;text-align:left}
+.res .n{font-weight:600}
+.res .c2{color:var(--muted);font-size:13px}
+.res:active{background:var(--s1);border-radius:10px}
+.rtag{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--s3);display:grid;place-items:center;font-size:20px;flex:none}
+.res .mini{width:44px;height:44px;font-size:18px}
+
+/* empty */
+.empty{text-align:center;color:var(--muted);padding:80px 30px}
+.empty .big{width:80px;height:80px;border-radius:50%;border:2px solid var(--s3);display:grid;place-items:center;margin:0 auto 18px}
+.empty h4{color:var(--text);font-size:20px;margin:0 0 6px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 20px;border-radius:12px;background:#fff;color:#000;font-weight:600;margin-top:18px}
+.btn.sec{background:var(--s2);color:var(--text)}
+.btn.wide{width:100%}
+
+/* ---------- lock / pin ---------- */
+.pinwrap{position:fixed;inset:0;z-index:80;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:calc(var(--sat) + 20px) 24px calc(var(--sab) + 20px)}
+.pinwrap.over{z-index:90;background:rgba(0,0,0,.92);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px)}
+.plogo{width:58px;height:58px;border-radius:16px;margin-bottom:18px}
+.ptitle{font-size:20px;font-weight:600;text-align:center}
+.psub{color:var(--muted);font-size:14px;margin-top:6px;text-align:center;min-height:20px;max-width:300px}
+.psub.err{color:var(--heart)}
+.pdots{display:flex;gap:14px;margin:26px 0 34px;height:14px}
+.pdots i{width:13px;height:13px;border-radius:50%;border:1.5px solid var(--muted);transition:.12s}
+.pdots i.f{background:#fff;border-color:#fff}
+.shake{animation:shk .4s}
+@keyframes shk{20%,60%{transform:translateX(-10px)}40%,80%{transform:translateX(10px)}}
+.keys{display:grid;grid-template-columns:repeat(3,78px);gap:16px 26px}
+.key{width:78px;height:78px;border-radius:50%;background:var(--s2);font-size:30px;font-weight:400;display:grid;place-items:center}
+.key:active{background:#3a3a3e}
+.key.ghost{background:transparent;font-size:16px;color:var(--muted)}
+.key.ghost:active{background:transparent;color:#fff}
+.pnext{margin-top:22px;height:22px}
+
+/* toast + progress */
+#toast{position:fixed;left:50%;bottom:calc(var(--sab) + 24px);transform:translate(-50%,20px);background:#2c2c30;color:#fff;padding:11px 18px;border-radius:22px;font-size:14px;font-weight:500;z-index:100;opacity:0;transition:.25s;pointer-events:none;max-width:88vw;text-align:center}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+.prog{position:fixed;inset:0;z-index:95;background:rgba(0,0,0,.75);display:grid;place-items:center}
+.prog .box{background:var(--s2);border-radius:16px;padding:22px 26px;min-width:240px;text-align:center}
+.prog .barp{height:6px;border-radius:3px;background:var(--s3);margin-top:14px;overflow:hidden}
+.prog .barp i{display:block;height:100%;background:#fff;width:0;transition:width .2s}
+.prog .pt{font-size:13px;color:var(--muted);margin-top:8px}
+.tile .ck{position:absolute;top:7px;right:7px;width:24px;height:24px;border-radius:50%;border:2px solid #fff;background:rgba(0,0,0,.35);display:grid;place-items:center}
+.tile .ck svg{opacity:0}
+.tile.sel .ck{background:#4ea1ff;border-color:#4ea1ff}
+.tile.sel .ck svg{opacity:1}
+.tile.sel img.ld{opacity:.55}
+body.selecting main{padding-bottom:calc(var(--sab) + 80px)}
+#selbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(20,20,22,.94);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border-top:1px solid var(--line);padding:10px 12px calc(var(--sab) + 10px);display:flex;gap:8px;align-items:center}
+#selbar .cnt{flex:1;text-align:center;font-size:14px;font-weight:600}
+#selbar button{height:38px;padding:0 14px;border-radius:12px;font-weight:600;background:var(--s2)}
+#selbar button.pri{background:#fff;color:#000}
+#selbar button:disabled{opacity:.35}
+.meta .notes{white-space:pre-wrap;word-break:break-word;margin-bottom:4px}
+textarea.field{min-height:84px}
+body.selecting #toast{bottom:calc(var(--sab) + 84px)}
+</style>
+</head>
+<body>
+<div id="cover"></div>
+
+<div id="app" class="hidden">
+  <header>
+    <div class="hrow">
+      <div class="brand" id="brand">Folio</div>
+      <button class="xpill" id="xbtn" aria-label="X content">X</button>
+      <button class="ibtn" id="searchBtn" aria-label="Search"></button>
+      <button class="ibtn" id="addBtn" aria-label="New post"></button>
+      <button class="ibtn" id="menuBtn" aria-label="Settings"></button>
+    </div>
+    <div class="bar" id="bar"></div>
+  </header>
+  <div id="profile"></div>
+  <main>
+    <div id="grid"></div>
+    <div id="feed" class="hidden"></div>
+    <div id="empty" class="hidden"></div>
+  </main>
+</div>
+
+<div id="viewer"></div>
+<div id="toast"></div>
+<input type="file" id="filePick" accept="image/*,video/*" multiple class="hidden">
+<input type="file" id="backupPick" multiple class="hidden">
+
+<script>
+"use strict";
+/* =========================================================
+   Folio — private photo & video organizer (runs fully offline)
+   Data lives only in this app's storage on the device.
+   ========================================================= */
+
+const VERSION = '2.0.0';
+
+/* ---------- icons ---------- */
+const I = {
+  check:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  search:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
+  plus:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M12 8v8M8 12h8"/></svg>',
+  menu:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
+  grid:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>',
+  feed:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="12" rx="2"/><path d="M3 19h18M3 22h12"/></svg>',
+  stack:'<svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M8 2h11a3 3 0 0 1 3 3v11a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3V5a3 3 0 0 1 3-3z"/><path d="M3 7v11a3 3 0 0 0 3 3h11" fill="none" stroke="#fff" stroke-width="2"/></svg>',
+  play:'<svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z"/></svg>',
+  playBig:'<svg width="28" height="28" viewBox="0 0 24 24" fill="#fff"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z"/></svg>',
+  heart:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20.5s-7.5-4.6-9.3-9.1C1.4 8 3.4 4.5 7 4.5c2 0 3.4 1.1 5 3 1.6-1.9 3-3 5-3 3.6 0 5.6 3.5 4.3 6.9-1.8 4.5-9.3 9.1-9.3 9.1z"/></svg>',
+  heartF:'<svg width="26" height="26" viewBox="0 0 24 24" fill="#ff3040" stroke="#ff3040" stroke-width="2"><path d="M12 20.5s-7.5-4.6-9.3-9.1C1.4 8 3.4 4.5 7 4.5c2 0 3.4 1.1 5 3 1.6-1.9 3-3 5-3 3.6 0 5.6 3.5 4.3 6.9-1.8 4.5-9.3 9.1-9.3 9.1z"/></svg>',
+  heartS:'<svg width="15" height="15" viewBox="0 0 24 24" fill="#ff3040"><path d="M12 20.5s-7.5-4.6-9.3-9.1C1.4 8 3.4 4.5 7 4.5c2 0 3.4 1.1 5 3 1.6-1.9 3-3 5-3 3.6 0 5.6 3.5 4.3 6.9-1.8 4.5-9.3 9.1-9.3 9.1z"/></svg>',
+  back:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+  down:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>',
+  more:'<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>',
+  close:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+  left:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>',
+  right:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg>',
+  cam:'<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2.5" y="6" width="19" height="14" rx="3"/><circle cx="12" cy="13" r="4"/><path d="M8 6l1.5-2.5h5L16 6"/></svg>',
+  lock:'<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="10" width="16" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>',
+  del:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M9 5h11a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H9l-6-7 6-7z"/><path d="M12.5 9.5l5 5M17.5 9.5l-5 5" stroke-linecap="round"/></svg>',
+};
+
+/* ---------- tiny helpers ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  if (attrs) for (const k in attrs) {
+    const v = attrs[k];
+    if (v == null || v === false) continue;
+    if (k === 'class') el.className = v;
+    else if (k === 'html') el.innerHTML = v;
+    else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+    else if (k === 'style') el.style.cssText = v;
+    else el.setAttribute(k, v === true ? '' : v);
+  }
+  for (const k of kids.flat()) if (k != null && k !== false) el.append(k.nodeType ? k : document.createTextNode(k));
+  return el;
+}
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const norm = s => (s || '').trim().replace(/\s+/g, ' ');
+const tagNorm = s => norm(s).replace(/^#+/, '').toLowerCase();
+const key = s => norm(s).toLowerCase();
+const initial = s => (norm(s)[0] || '?').toUpperCase();
+function fmtDur(s) { if (!s || !isFinite(s)) return ''; s = Math.round(s); const m = Math.floor(s / 60), x = s % 60; return m >= 60 ? `${Math.floor(m/60)}:${String(m%60).padStart(2,'0')}:${String(x).padStart(2,'0')}` : `${m}:${String(x).padStart(2, '0')}`; }
+function fmtDate(d) { if (!d) return ''; const [y, m, dd] = d.split('-').map(Number); return new Date(y, m - 1, dd).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }); }
+function fmtBytes(b) { if (!b) return '0 MB'; const u = ['B','KB','MB','GB','TB']; let i = 0; while (b >= 1024 && i < 4) { b /= 1024; i++; } return b.toFixed(i > 2 ? 1 : 0) + ' ' + u[i]; }
+function today() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function dateOf(ms) { const d = new Date(ms); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+let toastT;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2400); }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const isVideo = f => (f.type || '').startsWith('video') || /\.(mov|mp4|m4v|webm|3gp|avi|mkv)$/i.test(f.name || '');
+
+/* ---------- IndexedDB ---------- */
+const DB = {
+  db: null,
+  open() {
+    return new Promise((res, rej) => {
+      const r = indexedDB.open('folio2', 1);
+      r.onupgradeneeded = () => {
+        const d = r.result;
+        d.createObjectStore('posts', { keyPath: 'id' });   // {id, d: encrypted post}
+        d.createObjectStore('media');                       // "itemId/chunk" -> encrypted chunk
+        d.createObjectStore('thumbs');                      // itemId -> encrypted thumbnail
+        d.createObjectStore('meta');                        // wrapped key, view settings, failed tries
+      };
+      r.onsuccess = () => { this.db = r.result; res(); };
+      r.onerror = () => rej(r.error);
+    });
+  },
+  tx(store, mode, fn) {
+    return new Promise((res, rej) => {
+      const t = this.db.transaction(store, mode);
+      const s = t.objectStore(store);
+      let out; const r = fn(s);
+      if (r) r.onsuccess = () => { out = r.result; };
+      t.oncomplete = () => res(out);
+      t.onerror = () => rej(t.error);
+      t.onabort = () => rej(t.error || new Error('Storage aborted (phone may be out of space)'));
+    });
+  },
+  get(store, k) { return this.tx(store, 'readonly', s => s.get(k)); },
+  put(store, v, k) { return this.tx(store, 'readwrite', s => k === undefined ? s.put(v) : s.put(v, k)); },
+  del(store, k) { return this.tx(store, 'readwrite', s => s.delete(k)); },
+  delPrefix(store, p) { return this.tx(store, 'readwrite', s => s.delete(IDBKeyRange.bound(p, p + '￿'))); },
+  all(store) { return this.tx(store, 'readonly', s => s.getAll()); },
+};
+
+/* ---------- encryption ----------
+   One random AES-256 key encrypts everything: posts (creators, tags, notes), thumbnails,
+   photos and videos. That key is saved only in wrapped (encrypted) form, locked with a key
+   derived from your passcode (PBKDF2-SHA256, 600,000 rounds). It exists in memory only
+   while Folio is unlocked. Forgetting the passcode means the library can't be opened. */
+const enc = new TextEncoder(), dec = new TextDecoder();
+const KDF_ITER = 600000;
+const CHUNK = 2 * 1024 * 1024;   // videos are stored as encrypted 2 MB pieces
+let DK = null;                   // data key, only while unlocked
+let keyRec = null;               // {kid, salt, iter, iv, wrapped, kind:'pin'|'pass', len}
+const rand = n => crypto.getRandomValues(new Uint8Array(n));
+const b64e = u8 => { let s = ''; for (let i = 0; i < u8.length; i++) s += String.fromCharCode(u8[i]); return btoa(s); };
+const b64d = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function kekFrom(pass, salt, iter) {
+  const base = await crypto.subtle.importKey('raw', enc.encode(pass), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b64d(salt), iterations: iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['wrapKey', 'unwrapKey']);
+}
+async function wrapDK(dk, pass) {
+  const salt = b64e(rand(16)), iv = rand(12);
+  const kek = await kekFrom(pass, salt, KDF_ITER);
+  const w = await crypto.subtle.wrapKey('raw', dk, kek, { name: 'AES-GCM', iv });
+  return { salt, iter: KDF_ITER, iv: b64e(iv), wrapped: b64e(new Uint8Array(w)) };
+}
+async function unwrapDK(rec, pass) {
+  try {
+    const kek = await kekFrom(pass, rec.salt, rec.iter);
+    return await crypto.subtle.unwrapKey('raw', b64d(rec.wrapped), kek, { name: 'AES-GCM', iv: b64d(rec.iv) }, { name: 'AES-GCM' }, true, ['encrypt', 'decrypt']);
+  } catch { return null; }
+}
+async function sealBuf(buf, k = DK) {
+  if (!k) throw new Error('Folio is locked');
+  const iv = rand(12);
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, k, buf));
+  const out = new Uint8Array(12 + ct.length); out.set(iv); out.set(ct, 12);
+  return out;
+}
+async function openBuf(buf, k = DK) {
+  if (!k) throw new Error('Folio is locked');
+  const u = new Uint8Array(buf);
+  return crypto.subtle.decrypt({ name: 'AES-GCM', iv: u.subarray(0, 12) }, k, u.subarray(12));
+}
+const sealBlob = async (buf, k) => new Blob([await sealBuf(buf, k)]);
+const openBlob = async (blob, k) => openBuf(await blob.arrayBuffer(), k);
+
+async function savePost(p) { await DB.put('posts', { id: p.id, d: await sealBlob(enc.encode(JSON.stringify(p))) }); }
+async function loadPosts() {
+  const out = [];
+  for (const r of (await DB.all('posts')) || []) {
+    try { out.push(JSON.parse(dec.decode(await openBlob(r.d)))); } catch {}
+  }
+  return out;
+}
+async function storeItem(it, onp) {
+  const f = it._file; let n = 0;
+  for (let o = 0; o < f.size || n === 0; o += CHUNK) {
+    await DB.put('media', await sealBlob(await f.slice(o, o + CHUNK).arrayBuffer()), `${it.id}/${n}`);
+    n++;
+    if (onp) onp(f.size ? Math.min(1, (o + CHUNK) / f.size) : 1);
+  }
+  await DB.put('thumbs', await sealBlob(await it._thumb.arrayBuffer()), it.id);
+  it.n = n; it.size = f.size;
+  it.mime = f.type || (it.type === 'video' ? 'video/mp4' : 'image/jpeg');
+}
+async function readMedia(it) {
+  const parts = [];
+  for (let i = 0; i < (it.n || 1); i++) {
+    const b = await DB.get('media', `${it.id}/${i}`);
+    if (!b) throw new Error('Missing file data');
+    parts.push(await openBlob(b));
+  }
+  return new Blob(parts, { type: it.mime || (it.type === 'video' ? 'video/mp4' : 'image/jpeg') });
+}
+async function removeItemData(itemId) {
+  await DB.delPrefix('media', itemId + '/'); await DB.del('thumbs', itemId);
+  const u = thumbURL.get(itemId); if (u) { URL.revokeObjectURL(u); thumbURL.delete(itemId); }
+}
+
+/* ---------- state ---------- */
+let posts = [];                // decrypted, in memory only while unlocked
+let settings = { view: 'grid', sort: 'date-desc', lockDelay: 0 };
+let xMode = 'off';            // 'off' | 'on' | 'only'
+let filters = [];             // [{type:'creator'|'tag'|'text'|'missing', value}]
+let favOnly = false;
+let unlocked = false;
+let hiddenAt = 0;
+let selecting = false;
+const selected = new Set();
+let busyOps = 0, pendingLock = false;
+const thumbURL = new Map();   // itemId -> objectURL
+
+async function saveSettings() { await DB.put('meta', settings, 'settings'); }
+
+/* ---------- filters ---------- */
+const fKey = f => f.type === 'tag' ? tagNorm(f.value) : key(f.value);
+function fLabel(f) {
+  if (f.type === 'tag') return '#' + tagNorm(f.value);
+  if (f.type === 'text') return '“' + norm(f.value) + '”';
+  if (f.type === 'missing') return f.value === 'tags' ? 'No tags' : 'No creator';
+  return norm(f.value);
+}
+function fMatch(f, p) {
+  const k = fKey(f);
+  if (f.type === 'tag') return p.tags.some(t => tagNorm(t) === k);
+  if (f.type === 'creator') return p.creators.some(c => key(c) === k);
+  if (f.type === 'text') return (p.notes || '').toLowerCase().includes(k);
+  if (f.type === 'missing') return f.value === 'tags' ? !p.tags.length : !p.creators.length;
+  return true;
+}
+
+/* ---------- passcode screens ----------
+   opts: {title, sub, kind:'pin'|'pass', len (auto-submit length), min, over, onCancel,
+          alt:{label, fn}, onSubmit(value, ui) -> true | false | 'error message'} */
+const logo = () => h('img', { class: 'plogo', src: 'icon-180.png', alt: '' });
+function pinPad(opts) {
+  let val = '', busy = false;
+  const min = opts.min || 6;
+  const wrap = h('div', { class: 'pinwrap' + (opts.over ? ' over' : '') });
+  const dots = h('div', { class: 'pdots' });
+  const sub = h('div', { class: 'psub' }, opts.sub || '');
+  const title = h('div', { class: 'ptitle' }, opts.title);
+  const next = h('div', { class: 'pnext' });
+  const drawDots = () => {
+    const n = opts.len || Math.max(min, val.length);
+    dots.innerHTML = '';
+    for (let i = 0; i < n; i++) dots.append(h('i', { class: i < val.length ? 'f' : '' }));
+    next.innerHTML = '';
+    if (!opts.len && val.length >= min) next.append(h('button', { class: 'btn', style: 'margin:0;height:38px', onclick: submit }, 'Continue'));
+  };
+  const fail = msg => {
+    sub.textContent = msg; sub.classList.add('err');
+    dots.classList.remove('shake'); void dots.offsetWidth; dots.classList.add('shake');
+    if (navigator.vibrate) navigator.vibrate(80);
+    val = ''; drawDots();
+  };
+  const ui = { setTitle: t => { title.textContent = t; }, setSub: s => { sub.textContent = s; sub.classList.remove('err'); }, reset: () => { val = ''; drawDots(); } };
+  async function submit() {
+    if (busy) return; busy = true;
+    const prev = sub.textContent; sub.textContent = 'Checking…'; sub.classList.remove('err');
+    const r = await opts.onSubmit(val, ui);
+    busy = false;
+    if (r === true) { wrap.remove(); return; }
+    if (sub.textContent === 'Checking…') sub.textContent = prev;
+    if (typeof r === 'string') fail(r);
+  }
+  const press = d => {
+    if (busy) return;
+    if (d === 'del') { val = val.slice(0, -1); drawDots(); return; }
+    if (val.length >= 12) return;
+    val += d; drawDots();
+    if (opts.len && val.length === opts.len) setTimeout(submit, 90);
+  };
+  const keys = h('div', { class: 'keys' });
+  for (const d of ['1','2','3','4','5','6','7','8','9']) keys.append(h('button', { class: 'key', onclick: () => press(d) }, d));
+  keys.append(opts.onCancel ? h('button', { class: 'key ghost', onclick: () => { wrap.remove(); opts.onCancel(); } }, 'Cancel') : h('div'));
+  keys.append(h('button', { class: 'key', onclick: () => press('0') }, '0'));
+  keys.append(h('button', { class: 'key ghost', onclick: () => press('del'), 'aria-label': 'Delete', html: I.del }));
+  wrap.append(logo(), title, sub, dots, keys, next);
+  if (opts.alt) wrap.append(h('button', { class: 'plink', style: 'margin-top:14px', onclick: () => { wrap.remove(); opts.alt.fn(); } }, opts.alt.label));
+  drawDots();
+  document.body.append(wrap);
+  return wrap;
+}
+function textPad(opts) {
+  let busy = false;
+  const min = opts.min || 8;
+  const wrap = h('div', { class: 'pinwrap' + (opts.over ? ' over' : '') });
+  const title = h('div', { class: 'ptitle' }, opts.title);
+  const sub = h('div', { class: 'psub' }, opts.sub || '');
+  const inp = h('input', { type: 'password', class: 'field', style: 'max-width:320px;margin:26px 0 14px;background:var(--s2);text-align:center', autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false', enterkeyhint: 'go', 'aria-label': 'Password' });
+  const fail = msg => {
+    sub.textContent = msg; sub.classList.add('err');
+    inp.classList.remove('shake'); void inp.offsetWidth; inp.classList.add('shake');
+    inp.value = ''; inp.focus();
+  };
+  const ui = { setTitle: t => { title.textContent = t; }, setSub: s => { sub.textContent = s; sub.classList.remove('err'); }, reset: () => { inp.value = ''; inp.focus(); } };
+  async function submit() {
+    if (busy) return;
+    const v = inp.value;
+    if (v.length < min) return fail(`Use at least ${min} characters`);
+    busy = true;
+    const prev = sub.textContent; sub.textContent = 'Checking…'; sub.classList.remove('err');
+    const r = await opts.onSubmit(v, ui);
+    busy = false;
+    if (r === true) { wrap.remove(); return; }
+    if (sub.textContent === 'Checking…') sub.textContent = prev;
+    if (typeof r === 'string') fail(r);
+  }
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
+  wrap.append(logo(), title, sub, inp, h('button', { class: 'btn', style: 'margin:0;min-width:200px', onclick: submit }, 'Continue'));
+  if (opts.onCancel) wrap.append(h('button', { class: 'btn sec', style: 'margin-top:10px;min-width:200px', onclick: () => { wrap.remove(); opts.onCancel(); } }, 'Cancel'));
+  if (opts.alt) wrap.append(h('button', { class: 'plink', style: 'margin-top:18px', onclick: () => { wrap.remove(); opts.alt.fn(); } }, opts.alt.label));
+  document.body.append(wrap);
+  setTimeout(() => inp.focus(), 60);
+  return wrap;
+}
+const passPrompt = o => o.kind === 'pass' ? textPad(o) : pinPad(o);
+
+let fails = { count: 0, until: 0 };   // survives reloads, so the wait can't be skipped
+function askPass(title, over, onCancel) {
+  return new Promise(resolve => passPrompt({
+    kind: keyRec.kind, len: keyRec.len, min: keyRec.kind === 'pass' ? 1 : 6, title, over,
+    sub: over ? 'Enter your passcode' : '',
+    onCancel: onCancel ? () => { onCancel(); resolve(false); } : null,
+    onSubmit: async pass => {
+      if (Date.now() < fails.until) return `Too many tries. Wait ${Math.ceil((fails.until - Date.now()) / 1000)}s`;
+      const dk = await unwrapDK(keyRec, pass);
+      if (dk) {
+        DK = dk;
+        if (fails.count) { fails = { count: 0, until: 0 }; DB.put('meta', fails, 'fails'); }
+        resolve(true); return true;
+      }
+      fails.count++;
+      if (fails.count >= 5) fails.until = Date.now() + 30000 * 2 ** Math.min(fails.count - 5, 6);
+      DB.put('meta', fails, 'fails');
+      return fails.count >= 5 ? `Too many tries. Wait ${Math.ceil((fails.until - Date.now()) / 1000)}s` : 'Wrong passcode';
+    }
+  }));
+}
+/* o: {title, over, onCancel, warn, onDone(value, kind)} */
+function createPass(o) {
+  let kind = 'pin';
+  const start = () => {
+    let first = null;
+    const isPin = kind === 'pin';
+    passPrompt({
+      kind, title: o.title, over: o.over, onCancel: o.onCancel, min: isPin ? 6 : 8,
+      sub: (isPin ? 'Use 6–12 digits.' : 'Use at least 8 characters.') + (o.warn ? ' It can’t be reset, so don’t forget it.' : ''),
+      alt: { label: isPin ? 'Use a password instead' : 'Use a number passcode instead', fn: () => { kind = isPin ? 'pass' : 'pin'; start(); } },
+      onSubmit: async (v, ui) => {
+        if (first === null) { first = v; ui.setTitle('Confirm it'); ui.setSub('Enter it again'); ui.reset(); return false; }
+        if (v !== first) { first = null; ui.setTitle(o.title); return 'They didn’t match. Try again'; }
+        await o.onDone(v, kind); return true;
+      }
+    });
+  };
+  start();
+}
+
+/* ---------- lock / unlock ---------- */
+async function showLock() {
+  unlocked = false;
+  $('#app').classList.add('hidden');
+  keyRec = await DB.get('meta', 'key');
+  if (document.querySelector('.pinwrap:not(.over)')) return;
+  if (!keyRec) {
+    createPass({ title: 'Create a passcode', warn: true, onDone: async (v, kind) => {
+      DK = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
+      keyRec = { ...(await wrapDK(DK, v)), kid: uid(), kind, len: kind === 'pin' ? v.length : 0 };
+      await DB.put('meta', keyRec, 'key');
+      if (navigator.storage && navigator.storage.persist) try { await navigator.storage.persist(); } catch {}
+      onUnlock();
+    } });
+    return;
+  }
+  await askPass('Folio');
+  onUnlock();
+}
+async function onUnlock() {
+  posts = await loadPosts();
+  unlocked = true;
+  $('#app').classList.remove('hidden');
+  render();
+}
+/* forget the key and everything decrypted */
+function wipe() {
+  DK = null; posts = [];
+  for (const u of thumbURL.values()) URL.revokeObjectURL(u);
+  thumbURL.clear();
+  for (const u of mediaURL.values()) URL.revokeObjectURL(u);
+  mediaURL.clear();
+  ['#grid', '#feed', '#profile', '#viewer', '#empty'].forEach(s => { $(s).innerHTML = ''; });
+  $('#selbar')?.remove();
+}
+function lockNow() {
+  if (!unlocked) return;
+  if (busyOps) { pendingLock = true; return; }   // finish saving first, then lock
+  xMode = 'off'; selecting = false; selected.clear(); filters = []; favOnly = false;
+  closeViewer(true); closeSheet(true);
+  ['search', 'settings', 'editor'].forEach(n => closePage(n, true));
+  document.querySelectorAll('.pinwrap.over').forEach(e => e.remove());
+  pauseAll();
+  wipe();
+  showLock();
+}
+function checkPendingLock() { if (pendingLock && !busyOps) { pendingLock = false; lockNow(); } }
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    hiddenAt = Date.now();
+    document.body.classList.add('covered');
+    pauseAll();
+    if (unlocked && !settings.lockDelay) lockNow();
+  } else {
+    if (unlocked && settings.lockDelay && Date.now() - hiddenAt > settings.lockDelay * 1000) lockNow();
+    document.body.classList.remove('covered');
+  }
+});
+window.addEventListener('pagehide', () => document.body.classList.add('covered'));
+window.addEventListener('pageshow', () => { if (!document.hidden) document.body.classList.remove('covered'); });
+function pauseAll() { document.querySelectorAll('video').forEach(v => { try { v.pause(); } catch {} }); }
+
+/* ---------- visibility rules for X ---------- */
+const hasX = p => p.x || p.items.some(i => i.x);
+function visItems(p) {
+  if (xMode === 'on') return p.items;
+  if (xMode === 'off') return p.x ? [] : p.items.filter(i => !i.x);
+  return p.x ? p.items : p.items.filter(i => i.x);           // 'only'
+}
+function visibleBase() { return posts.filter(p => visItems(p).length); }
+function visiblePosts() {
+  let list = visibleBase();
+  if (favOnly) list = list.filter(p => p.fav);
+  for (const f of filters) list = list.filter(p => fMatch(f, p));
+  const d = p => p.date || dateOf(p.created);
+  if (settings.sort === 'date-desc') list.sort((a, b) => d(b).localeCompare(d(a)) || b.created - a.created);
+  else if (settings.sort === 'date-asc') list.sort((a, b) => d(a).localeCompare(d(b)) || a.created - b.created);
+  else list.sort((a, b) => b.created - a.created);
+  return list;
+}
+/* counts of creators/tags across what's currently visible (so hidden X names never leak) */
+function indexOf(type, base) {
+  const m = new Map();
+  for (const p of base || visibleBase()) {
+    const arr = type === 'tag' ? p.tags : p.creators;
+    for (const v of arr) {
+      const k = type === 'tag' ? tagNorm(v) : key(v);
+      if (!m.has(k)) m.set(k, { name: type === 'tag' ? tagNorm(v) : norm(v), count: 0 });
+      m.get(k).count++;
+    }
+  }
+  return [...m.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+}
+
+/* ---------- thumbs ---------- */
+async function getThumb(itemId) {
+  if (thumbURL.has(itemId)) return thumbURL.get(itemId);
+  const b = await DB.get('thumbs', itemId);
+  if (!b) return null;
+  let buf; try { buf = await openBlob(b); } catch { return null; }
+  if (thumbURL.has(itemId)) return thumbURL.get(itemId);
+  const u = URL.createObjectURL(new Blob([buf], { type: 'image/jpeg' }));
+  thumbURL.set(itemId, u);
+  return u;
+}
+const thumbIO = new IntersectionObserver(es => {
+  for (const e of es) if (e.isIntersecting) {
+    thumbIO.unobserve(e.target);
+    const img = e.target;
+    getThumb(img.dataset.id).then(u => { if (u) { img.onload = () => img.classList.add('ld'); img.src = u; } });
+  }
+}, { rootMargin: '800px 0px' });
+function thumbImg(itemId, cls) {
+  const img = h('img', { class: cls || '', alt: '', 'data-id': itemId, decoding: 'async' });
+  thumbIO.observe(img);
+  return img;
+}
+
+/* full media loading for carousels */
+const mediaURL = new Map(); // slide element -> url
+function loadSlide(slide) {
+  if (slide.dataset.loaded) return;
+  const it = JSON.parse(slide.dataset.item);
+  slide.dataset.loaded = '1';
+  readMedia(it).catch(() => null).then(b => {
+    if (!b || !slide.dataset.loaded) return;
+    const u = URL.createObjectURL(b);
+    mediaURL.set(slide, u);
+    if (it.type === 'video') {
+      slide.dataset.src = u;
+      if (slide.dataset.autoplay) startVideo(slide);
+    } else {
+      const img = h('img', { src: u, alt: '', decoding: 'async' });
+      slide.querySelector('img.ph')?.remove();
+      slide.prepend(img);
+    }
+  });
+}
+function unloadSlide(slide) {
+  if (!slide.dataset.loaded) return;
+  const v = slide.querySelector('video');
+  if (v && !v.paused) return;
+  delete slide.dataset.loaded;
+  const u = mediaURL.get(slide);
+  if (u) { URL.revokeObjectURL(u); mediaURL.delete(slide); }
+  if (v) { v.removeAttribute('src'); v.load(); v.remove(); slide.querySelector('.poster')?.classList.remove('hidden'); slide.querySelector('.play')?.classList.remove('hidden'); }
+  const img = slide.querySelector('img:not(.poster):not(.ph)');
+  if (img) { img.remove(); }
+  delete slide.dataset.src;
+}
+const mediaIO = new IntersectionObserver(es => {
+  for (const e of es) e.isIntersecting ? loadSlide(e.target) : unloadSlide(e.target);
+}, { rootMargin: '700px 100%' });
+
+function startVideo(slide) {
+  if (!slide.dataset.src) { slide.dataset.autoplay = '1'; loadSlide(slide); return; }
+  delete slide.dataset.autoplay;
+  let v = slide.querySelector('video');
+  if (!v) {
+    v = h('video', { controls: true, playsinline: true, 'webkit-playsinline': true, preload: 'metadata' });
+    v.src = slide.dataset.src;
+    slide.append(v);
+  }
+  slide.querySelector('.poster')?.classList.add('hidden');
+  slide.querySelector('.play')?.classList.add('hidden');
+  pauseAll();
+  v.play().catch(() => {});
+}
+
+function buildCarousel(post, items, opts = {}) {
+  const car = h('div', { class: 'car' });
+  const track = h('div', { class: 'track' });
+  const dots = h('div', { class: 'dots' });
+  const count = items.length > 1 ? h('div', { class: 'count' }, `1/${items.length}`) : null;
+  items.forEach((it, i) => {
+    const slide = h('div', { class: 'slide', 'data-item': JSON.stringify(it) });
+    if (it.type === 'video') {
+      slide.append(thumbImg(it.id, 'poster ld'), h('button', { class: 'play', html: I.playBig, 'aria-label': 'Play', onclick: () => startVideo(slide) }));
+    } else {
+      // low-res thumb placeholder until full image loads
+      slide.append(thumbImg(it.id, 'ph ld'));
+      slide.querySelector('.ph').style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain;filter:blur(6px)';
+    }
+    if (it.x && !post.x && xMode === 'on') slide.append(h('div', { class: 'sxb' }, 'X'));
+    track.append(slide);
+    mediaIO.observe(slide);
+    if (items.length > 1) dots.append(h('i', { class: i === 0 ? 'on' : '' }));
+  });
+  let cur = 0;
+  track.addEventListener('scroll', () => {
+    const i = Math.round(track.scrollLeft / track.clientWidth);
+    if (i !== cur) {
+      cur = i;
+      [...dots.children].forEach((d, j) => d.classList.toggle('on', j === i));
+      if (count) count.textContent = `${i + 1}/${items.length}`;
+      track.querySelectorAll('video').forEach(v => v.pause());
+    }
+  }, { passive: true });
+  car.append(track);
+  if (count) car.append(count);
+  car._dots = dots;
+  car._goto = i => { track.scrollLeft = i * track.clientWidth; };
+  car._cur = () => Math.min(cur, items.length - 1);
+  return car;
+}
+
+/* ---------- main render ---------- */
+function render() {
+  if (!unlocked) return;
+  document.body.classList.toggle('selecting', selecting);
+  renderSelbar();
+  renderHeader();
+  renderProfile();
+  const list = visiblePosts();
+  const grid = $('#grid'), feed = $('#feed'), empty = $('#empty');
+  // release media from previous feed
+  feed.querySelectorAll('.slide').forEach(s => { mediaIO.unobserve(s); s.querySelector('video')?.pause(); unloadSlideForce(s); });
+  grid.innerHTML = ''; feed.innerHTML = '';
+  empty.classList.toggle('hidden', list.length > 0);
+  if (!list.length) { renderEmpty(); grid.classList.add('hidden'); feed.classList.add('hidden'); return; }
+  if (selecting || settings.view === 'grid') {
+    grid.classList.remove('hidden'); feed.classList.add('hidden');
+    const frag = document.createDocumentFragment();
+    for (const p of list) frag.append(tile(p));
+    grid.append(frag);
+  } else {
+    feed.classList.remove('hidden'); grid.classList.add('hidden');
+    const frag = document.createDocumentFragment();
+    for (const p of list) frag.append(feedPost(p));
+    feed.append(frag);
+  }
+}
+function unloadSlideForce(s) { const v = s.querySelector('video'); if (v) v.pause(); delete s.dataset.loaded; const u = mediaURL.get(s); if (u) { URL.revokeObjectURL(u); mediaURL.delete(s); } }
+
+function renderHeader() {
+  const xb = $('#xbtn');
+  xb.className = 'xpill' + (xMode === 'on' ? ' on' : xMode === 'only' ? ' only' : '');
+  xb.innerHTML = xMode === 'only' ? 'X <small>ONLY</small>' : 'X';
+  const bar = $('#bar'); bar.innerHTML = '';
+  const seg = h('div', { class: 'seg' },
+    h('button', { class: settings.view === 'grid' ? 'act' : '', html: I.grid, 'aria-label': 'Grid', onclick: () => { settings.view = 'grid'; saveSettings(); render(); } }),
+    h('button', { class: settings.view === 'feed' ? 'act' : '', html: I.feed, 'aria-label': 'Feed', onclick: () => { settings.view = 'feed'; saveSettings(); render(); } }));
+  bar.append(seg);
+  bar.append(h('button', { class: 'chip fav' + (favOnly ? ' act' : ''), onclick: () => { favOnly = !favOnly; render(); } }, h('span', { html: favOnly ? '♥' : '♡' }), 'Favorites'));
+  bar.append(h('button', { class: 'chip' + (selecting ? ' act' : ''), onclick: () => { selecting = !selecting; selected.clear(); render(); } }, selecting ? 'Done' : 'Select'));
+  for (const f of filters) {
+    bar.append(h('button', { class: 'chip act', onclick: () => { filters = filters.filter(x => x !== f); render(); } },
+      fLabel(f), h('span', { class: 'x', html: I.close })));
+  }
+  const sel = h('select', { class: 'sortsel', 'aria-label': 'Sort', onchange: e => { settings.sort = e.target.value; saveSettings(); render(); } },
+    h('option', { value: 'date-desc' }, 'Newest shoot'),
+    h('option', { value: 'date-asc' }, 'Oldest shoot'),
+    h('option', { value: 'added-desc' }, 'Recently added'));
+  sel.value = settings.sort;
+  bar.append(sel);
+}
+
+function renderProfile() {
+  const el = $('#profile'); el.innerHTML = '';
+  if (filters.length !== 1 || (filters[0].type !== 'creator' && filters[0].type !== 'tag')) return;
+  const f = filters[0];
+  const list = visiblePosts();
+  let photos = 0, videos = 0;
+  for (const p of list) for (const i of visItems(p)) i.type === 'video' ? videos++ : photos++;
+  const isTag = f.type === 'tag';
+  const name = isTag ? '#' + tagNorm(f.value) : norm(f.value);
+  el.append(h('div', { class: 'profile' },
+    h('div', { class: 'avatar' + (isTag ? ' tag' : '') }, isTag ? '#' : initial(f.value)),
+    h('div', { style: 'min-width:0' },
+      h('div', { class: 'pname' }, name),
+      h('div', { class: 'pstats' }, h('span', null, h('b', null, String(list.length)), list.length === 1 ? ' post' : ' posts'), h('span', null, h('b', null, String(photos)), photos === 1 ? ' photo' : ' photos'), h('span', null, h('b', null, String(videos)), videos === 1 ? ' video' : ' videos')),
+      h('button', { class: 'plink', onclick: () => renameFlow(f.type, isTag ? tagNorm(f.value) : norm(f.value)) }, isTag ? 'Rename tag' : 'Rename creator'))));
+}
+
+function renderEmpty() {
+  const e = $('#empty'); e.innerHTML = '';
+  if (!posts.length) {
+    e.append(h('div', { class: 'big', html: I.cam }), h('h4', null, 'No posts yet'), h('div', null, 'Add your first shoot. Photos and videos stay on this phone.'),
+      h('button', { class: 'btn', onclick: () => openEditor() }, 'New post'));
+  } else if (xMode === 'only') {
+    e.append(h('h4', null, 'No X content'), h('div', null, 'Mark a post or single photos as X in the editor.'));
+  } else {
+    e.append(h('h4', null, 'Nothing here'), h('div', null, 'No posts match these filters.'),
+      h('button', { class: 'btn sec', onclick: () => { filters = []; favOnly = false; render(); } }, 'Clear filters'));
+  }
+}
+
+function tile(p) {
+  const items = visItems(p);
+  const first = items[0];
+  const t = h('div', { class: 'tile' + (selected.has(p.id) ? ' sel' : ''), onclick: () => {
+    if (!selecting) return openViewer(p.id);
+    selected.has(p.id) ? selected.delete(p.id) : selected.add(p.id);
+    t.classList.toggle('sel', selected.has(p.id)); renderSelbar();
+  } }, thumbImg(first.id));
+  if (selecting) { t.append(h('div', { class: 'ck', html: I.check })); return t; }
+  if (items.length > 1) t.append(h('div', { class: 'ic', html: I.stack }));
+  else if (first.type === 'video') t.append(h('div', { class: 'ic', html: I.play }));
+  const vid = items.find(i => i.type === 'video');
+  if (vid && vid.dur) t.append(h('div', { class: 'dur' }, h('span', { html: I.play.replace(/16/g, '11') }), fmtDur(vid.dur)));
+  if (xMode === 'on' && hasX(p)) t.append(h('div', { class: 'xb' }, 'X'));
+  if (p.fav) t.append(h('div', { class: 'fv', html: I.heartS }));
+  return t;
+}
+
+function whoLine(p, withDate) {
+  const who = h('div', { class: 'fwho' });
+  if (p.creators.length) p.creators.forEach((c, i) => { if (i) who.append(', '); who.append(h('span', { onclick: e => { e.stopPropagation(); applyFilter('creator', c); } }, norm(c))); });
+  else who.append(h('span', { style: 'color:var(--muted)' }, 'No creator'));
+  if (withDate && p.date) who.append(h('span', { class: 'sub' }, fmtDate(p.date)));
+  return who;
+}
+
+function metaBlock(p, items) {
+  const favBtn = h('button', { class: 'ibtn', html: p.fav ? I.heartF : I.heart, 'aria-label': 'Favorite' });
+  favBtn.onclick = async () => { p.fav = !p.fav; await savePost(p); favBtn.innerHTML = p.fav ? I.heartF : I.heart; if (favOnly && !p.fav) render(); };
+  const acts = h('div', { class: 'acts' }, favBtn);
+  const photos = items.filter(i => i.type !== 'video').length, vids = items.length - photos;
+  acts.append(h('span', { style: 'color:var(--muted);font-size:13px' }, [photos && `${photos} photo${photos > 1 ? 's' : ''}`, vids && `${vids} video${vids > 1 ? 's' : ''}`].filter(Boolean).join(' · ')));
+  acts.append(h('div', { class: 'sp' }));
+  if (xMode !== 'off' && p.x) acts.append(h('span', { class: 'xbadge' }, 'X'));
+  const meta = h('div', { class: 'meta' });
+  if (p.notes) meta.append(h('div', { class: 'notes' }, p.notes));
+  if (p.tags.length) {
+    const tg = h('div', { class: 'tags' });
+    p.tags.forEach(t => tg.append(h('a', { onclick: () => applyFilter('tag', t) }, '#' + tagNorm(t))));
+    meta.append(tg);
+  }
+  if (p.date) meta.append(h('div', { class: 'date' }, fmtDate(p.date)));
+  return [acts, meta];
+}
+
+function feedPost(p) {
+  const items = visItems(p);
+  const car = buildCarousel(p, items);
+  const box = h('article', { class: 'fpost' },
+    h('div', { class: 'fhead' }, h('div', { class: 'mini' }, initial(p.creators[0] || '?')), whoLine(p),
+      h('button', { class: 'ibtn', html: I.more, 'aria-label': 'Post options', onclick: () => postMenu(p, car) })),
+    car, car._dots, ...metaBlock(p, items));
+  return box;
+}
+
+function applyFilter(type, value) {
+  closeViewer();
+  const nf = { type, value };
+  if (!filters.some(f => f.type === type && fKey(f) === fKey(nf))) filters.push(nf);
+  render();
+  window.scrollTo({ top: 0 });
+}
+
+/* ---------- viewer ---------- */
+let viewerPostId = null;
+function openViewer(id, startIndex = 0) {
+  const p = posts.find(x => x.id === id); if (!p) return;
+  viewerPostId = id;
+  const v = $('#viewer');
+  v.querySelectorAll('.slide').forEach(s => { mediaIO.unobserve(s); unloadSlideForce(s); });
+  v.innerHTML = '';
+  const items = visItems(p);
+  const car = buildCarousel(p, items);
+  v.append(
+    h('div', { class: 'vbar' },
+      h('button', { class: 'ibtn', html: I.down, 'aria-label': 'Close', onclick: () => closeViewer() }),
+      h('div', { class: 'mini' }, initial(p.creators[0] || '?')),
+      whoLine(p, true),
+      h('button', { class: 'ibtn', html: I.more, 'aria-label': 'Post options', onclick: () => postMenu(p, car) })),
+    car,
+    h('div', { class: 'vfoot' }, car._dots, ...metaBlock(p, items)));
+  v.classList.add('open');
+  history.pushState({ viewer: 1 }, '');
+  if (startIndex) requestAnimationFrame(() => car._goto(startIndex));
+}
+function closeViewer(silent) {
+  const v = $('#viewer');
+  if (!v.classList.contains('open')) return;
+  v.classList.remove('open');
+  pauseAll();
+  setTimeout(() => { if (!v.classList.contains('open')) { v.querySelectorAll('.slide').forEach(s => { mediaIO.unobserve(s); unloadSlideForce(s); }); v.innerHTML = ''; } }, 320);
+  viewerPostId = null;
+  if (!silent && history.state && history.state.viewer) history.back();
+}
+window.addEventListener('popstate', () => { if ($('#viewer').classList.contains('open')) closeViewer(true); });
+
+/* ---------- bottom sheet ---------- */
+function openSheet(title, content) {
+  closeSheet(true);
+  const scrim = h('div', { class: 'scrim', onclick: () => closeSheet() });
+  const sh = h('div', { class: 'sheet' }, h('div', { class: 'grab' }), title ? h('h3', null, title) : null, content);
+  document.body.append(scrim, sh);
+  requestAnimationFrame(() => { scrim.classList.add('open'); sh.classList.add('open'); });
+}
+function closeSheet(instant) {
+  document.querySelectorAll('.scrim, .sheet').forEach(e => {
+    if (instant) return e.remove();
+    e.classList.remove('open'); setTimeout(() => e.remove(), 280);
+  });
+}
+function confirmSheet(title, msg, okText, onOk) {
+  openSheet(title, h('div', null,
+    h('div', { style: 'color:var(--muted);text-align:center;margin:-6px 10px 16px' }, msg),
+    h('button', { class: 'opt danger', style: 'justify-content:center;font-weight:600', onclick: () => { closeSheet(); onOk(); } }, okText),
+    h('button', { class: 'opt', style: 'justify-content:center', onclick: () => closeSheet() }, 'Cancel')));
+}
+
+function postMenu(p, car) {
+  const items = visItems(p);
+  const it = car ? items[car._cur()] : null;
+  openSheet(null, h('div', null,
+    h('button', { class: 'opt', onclick: () => { closeSheet(); closeViewer(); openEditor(p.id); } }, h('div', { class: 't' }, 'Edit post')),
+    it ? h('button', { class: 'opt', onclick: () => { closeSheet(); saveOut(it); } },
+      h('div', null, h('div', { class: 't' }, it.type === 'video' ? 'Save this video' : 'Save this photo'), h('div', { class: 'd' }, 'To your Photos or Files'))) : null,
+    h('button', { class: 'opt', onclick: async () => { p.x = !p.x; await savePost(p); closeSheet(); closeViewer(); render(); toast(p.x ? 'Post marked X' : 'Post no longer X'); } },
+      h('div', null, h('div', { class: 't' }, p.x ? 'Unmark as X' : 'Mark whole post as X'), h('div', { class: 'd' }, p.x ? 'Show it in normal mode' : 'Hide it unless X is on'))),
+    h('button', { class: 'opt danger', onclick: () => { closeSheet(); setTimeout(() => confirmSheet('Delete post?', 'This removes the post and its photos/videos from Folio. Your Photos app is not affected.', 'Delete', () => deletePost(p.id)), 300); } }, h('div', { class: 't' }, 'Delete post'))));
+}
+
+/* decrypt one photo/video and hand it to the iOS share sheet (Save Image / Save Video / Save to Files) */
+async function saveOut(it) {
+  toast('Preparing…');
+  let file;
+  try {
+    const blob = await readMedia(it);
+    const ext = ({ 'image/jpeg': 'jpg', 'image/png': 'png', 'image/heic': 'heic', 'image/gif': 'gif', 'image/webp': 'webp', 'video/quicktime': 'mov', 'video/mp4': 'mp4' })[blob.type] || (it.type === 'video' ? 'mp4' : 'jpg');
+    file = new File([blob], `Folio-${it.id}.${ext}`, { type: blob.type });
+  } catch { toast('Couldn’t open this file'); return; }
+  const btn = h('button', { class: 'btn wide', style: 'margin-top:0', onclick: async () => {
+    try {
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); closeSheet(); return; }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    const u = URL.createObjectURL(file);
+    const a = h('a', { href: u, download: file.name }); document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(u), 60000);
+    closeSheet();
+  } }, 'Share / Save');
+  openSheet('Ready to save', h('div', null,
+    h('div', { style: 'color:var(--muted);text-align:center;margin:-6px 10px 16px;font-size:14px' }, 'Choose “Save Image” or “Save Video” to put it in Photos. The saved copy is not encrypted.'),
+    btn));
+}
+
+async function deletePosts(ids) {
+  busyOps++;
+  try {
+    for (const id of ids) {
+      const p = posts.find(x => x.id === id); if (!p) continue;
+      for (const it of p.items) await removeItemData(it.id);
+      await DB.del('posts', id);
+    }
+  } finally { busyOps--; }
+  posts = posts.filter(x => !ids.includes(x.id));
+  closeViewer(); render(); toast(ids.length > 1 ? `${ids.length} posts deleted` : 'Post deleted');
+  checkPendingLock();
+}
+const deletePost = id => deletePosts([id]);
+
+/* ---------- multi-select ---------- */
+function renderSelbar() {
+  $('#selbar')?.remove();
+  if (!selecting || !unlocked) return;
+  document.body.append(h('div', { id: 'selbar' },
+    h('button', { onclick: endSelect }, 'Cancel'),
+    h('div', { class: 'cnt' }, selected.size ? `${selected.size} selected` : 'Tap posts to select'),
+    h('button', { class: 'pri', disabled: !selected.size, onclick: bulkMenu }, 'Actions')));
+}
+function endSelect() { selecting = false; selected.clear(); render(); }
+function bulkMenu() {
+  const sel = posts.filter(p => selected.has(p.id)); if (!sel.length) return;
+  const allX = sel.every(p => p.x), allFav = sel.every(p => p.fav);
+  const n = `${sel.length} post${sel.length > 1 ? 's' : ''}`;
+  const run = async (fn, msg) => {
+    closeSheet(); busyOps++;
+    try { for (const p of sel) { fn(p); await savePost(p); } } finally { busyOps--; }
+    endSelect(); toast(msg); checkPendingLock();
+  };
+  const o = (t, d, fn, cls) => h('button', { class: 'opt' + (cls ? ' ' + cls : ''), onclick: fn }, h('div', null, h('div', { class: 't' }, t), d ? h('div', { class: 'd' }, d) : null));
+  openSheet(n, h('div', null,
+    o('Add creators…', null, () => { closeSheet(); setTimeout(() => bulkAdd('creator', sel), 300); }),
+    o('Add tags…', null, () => { closeSheet(); setTimeout(() => bulkAdd('tag', sel), 300); }),
+    o(allFav ? 'Remove from favorites' : 'Add to favorites', null, () => run(p => { p.fav = !allFav; }, allFav ? 'Removed from favorites' : 'Added to favorites')),
+    o(allX ? 'Unmark as X' : 'Mark as X', allX ? 'Show them in normal mode' : 'Hide them unless X is on', () => run(p => { p.x = !allX; }, allX ? 'No longer X' : 'Marked X')),
+    o('Delete', null, () => { closeSheet(); setTimeout(() => confirmSheet(`Delete ${n}?`, 'This removes them and their photos/videos from Folio.', 'Delete', async () => { const ids = sel.map(p => p.id); selecting = false; selected.clear(); await deletePosts(ids); }), 300); }, 'danger')));
+}
+function bulkAdd(kind, sel) {
+  const ci = chipInput([], kind, kind === 'tag' ? 'Add tag…' : 'Add creator…');
+  openSheet(kind === 'tag' ? 'Add tags' : 'Add creators', h('div', null, ci,
+    h('button', { class: 'btn wide', style: 'margin-top:16px', onclick: async () => {
+      const vals = ci.values(); if (!vals.length) return;
+      const field = kind === 'tag' ? 'tags' : 'creators', k = kind === 'tag' ? tagNorm : key;
+      closeSheet(); busyOps++;
+      try {
+        for (const p of sel) {
+          for (const v of vals) if (!p[field].some(x => k(x) === k(v))) p[field].push(v);
+          await savePost(p);
+        }
+      } finally { busyOps--; }
+      endSelect(); toast('Added'); checkPendingLock();
+    } }, `Add to ${sel.length} post${sel.length > 1 ? 's' : ''}`)));
+}
+
+/* ---------- X toggle ---------- */
+function openXMenu() {
+  const opt = (mode, t, d) => h('button', { class: 'opt' + (xMode === mode ? ' sel' : ''), onclick: () => setX(mode) },
+    h('div', null, h('div', { class: 't' }, t), h('div', { class: 'd' }, d)), h('div', { class: 'rad' }));
+  openSheet('X content', h('div', null,
+    opt('off', 'Hidden', 'X posts and X photos are hidden'),
+    opt('on', 'Show X', 'Show everything, X included'),
+    opt('only', 'X only', 'Show only X content')));
+}
+async function setX(mode) {
+  closeSheet();
+  if (mode === xMode) return;
+  if (mode !== 'off' && xMode === 'off') {
+    const ok = await askPass('Show X content', true, () => {});
+    if (!ok) return;
+  }
+  xMode = mode;
+  filters = filters.filter(f => (f.type !== 'tag' && f.type !== 'creator') || indexOf(f.type).some(x => fKey(f) === (f.type === 'tag' ? x.name : key(x.name))));
+  render();
+  window.scrollTo({ top: 0 });
+}
+
+/* ---------- full-screen pages ---------- */
+const pages = {};
+function openPage(name, el, up) {
+  closePage(name, true);
+  el.classList.add('page'); if (up) el.classList.add('up');
+  document.body.append(el);
+  pages[name] = el;
+  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('open')));
+}
+function closePage(name, instant) {
+  const el = pages[name]; if (!el) return;
+  delete pages[name];
+  if (instant) return el.remove();
+  el.classList.remove('open'); setTimeout(() => el.remove(), 300);
+}
+
+/* ---------- search ---------- */
+function openSearch() {
+  const inp = h('input', { type: 'search', placeholder: 'Search creators, tags or notes', autocomplete: 'off', autocorrect: 'off', autocapitalize: 'off', spellcheck: 'false' });
+  const body = h('div', { class: 'pbody' });
+  const draw = () => {
+    const q = inp.value.trim().replace(/^[@#]/, '').toLowerCase();
+    body.innerHTML = '';
+    if (!q) {
+      const base = visibleBase();
+      const noCr = base.filter(p => !p.creators.length).length, noTag = base.filter(p => !p.tags.length).length;
+      const quick = (label, n, type, val) => h('button', { class: 'res', onclick: () => { closePage('search'); applyFilter(type, val); } },
+        h('div', { class: 'rtag' }, '?'), h('div', null, h('div', { class: 'n' }, label), h('div', { class: 'c2' }, `${n} post${n > 1 ? 's' : ''}`)));
+      if (noCr || noTag) body.append(h('div', { class: 'lbl', style: 'margin-top:4px' }, 'Needs organizing'));
+      if (noCr) body.append(quick('No creator', noCr, 'missing', 'creator'));
+      if (noTag) body.append(quick('No tags', noTag, 'missing', 'tags'));
+    }
+    const cr = indexOf('creator').filter(c => !q || c.name.toLowerCase().includes(q));
+    const tg = indexOf('tag').filter(t => !q || t.name.includes(q));
+    const startsTag = inp.value.trim().startsWith('#'), startsAt = inp.value.trim().startsWith('@');
+    if (cr.length && !startsTag) {
+      body.append(h('div', { class: 'lbl', style: 'margin-top:4px' }, 'Creators'));
+      cr.slice(0, q ? 50 : 12).forEach(c => body.append(h('button', { class: 'res', onclick: () => { closePage('search'); applyFilter('creator', c.name); } },
+        h('div', { class: 'mini' }, initial(c.name)), h('div', null, h('div', { class: 'n' }, c.name), h('div', { class: 'c2' }, `${c.count} post${c.count > 1 ? 's' : ''}`)))));
+    }
+    if (tg.length && !startsAt) {
+      body.append(h('div', { class: 'lbl' }, 'Tags'));
+      tg.slice(0, q ? 50 : 20).forEach(t => body.append(h('button', { class: 'res', onclick: () => { closePage('search'); applyFilter('tag', t.name); } },
+        h('div', { class: 'rtag' }, '#'), h('div', null, h('div', { class: 'n' }, '#' + t.name), h('div', { class: 'c2' }, `${t.count} post${t.count > 1 ? 's' : ''}`)))));
+    }
+    if (q && !startsTag && !startsAt) {
+      const hits = visibleBase().filter(p => (p.notes || '').toLowerCase().includes(q)).length;
+      if (hits) body.append(h('div', { class: 'lbl' }, 'Notes'), h('button', { class: 'res', onclick: () => { closePage('search'); applyFilter('text', q); } },
+        h('div', { class: 'rtag', html: I.search }), h('div', null, h('div', { class: 'n' }, `Notes with “${q}”`), h('div', { class: 'c2' }, `${hits} post${hits > 1 ? 's' : ''}`))));
+    }
+    if (!body.children.length) body.append(h('div', { class: 'empty', style: 'padding-top:40px' }, q ? 'Nothing matches.' : 'Creators and tags you add will show up here.'));
+  };
+  inp.addEventListener('input', draw);
+  const page = h('div', null,
+    h('div', { class: 'ptop', style: 'border:0' },
+      h('div', { class: 'sbox' }, h('span', { html: I.search, style: 'color:var(--muted)' }), inp),
+      h('button', { class: 'tbtn', style: 'min-width:0', onclick: () => closePage('search') }, 'Cancel')),
+    body);
+  draw();
+  openPage('search', page, true);
+  setTimeout(() => inp.focus(), 50);
+}
+
+/* ---------- chip input ---------- */
+function chipInput(initialVals, kind, placeholder) {
+  let vals = [...initialVals];
+  const wrap = h('div');
+  const box = h('div', { class: 'cin' });
+  const inp = h('input', { placeholder, autocomplete: 'off', autocorrect: 'off', autocapitalize: kind === 'tag' ? 'off' : 'words', spellcheck: 'false', enterkeyhint: 'done' });
+  const sugs = h('div', { class: 'sugs' });
+  const k = v => kind === 'tag' ? tagNorm(v) : key(v);
+  const add = v => {
+    v = kind === 'tag' ? tagNorm(v) : norm(v);
+    if (!v) return;
+    const known = indexOf(kind, posts).find(s => k(s.name) === k(v));   // reuse existing spelling
+    if (known) v = known.name;
+    if (!vals.some(x => k(x) === k(v))) vals.push(v);
+    inp.value = ''; draw();
+  };
+  const draw = () => {
+    box.querySelectorAll('.c').forEach(e => e.remove());
+    vals.forEach(v => box.insertBefore(h('span', { class: 'c' }, kind === 'tag' ? '#' + v : v,
+      h('button', { html: I.close, 'aria-label': 'Remove', onclick: () => { vals = vals.filter(x => x !== v); draw(); } })), inp));
+    drawSugs();
+  };
+  const drawSugs = () => {
+    const q = inp.value.trim().replace(/^#/, '').toLowerCase();
+    sugs.innerHTML = '';
+    const all = indexOf(kind, posts.filter(p => visItems(p).length || !hasX(p)))
+      .filter(s => !vals.some(v => k(v) === k(s.name)) && (!q || s.name.toLowerCase().includes(q))).slice(0, 15);
+    all.forEach(s => sugs.append(h('button', { onmousedown: e => e.preventDefault(), onclick: () => { add(s.name); inp.focus(); } }, kind === 'tag' ? '#' + s.name : s.name)));
+    sugs.classList.toggle('hidden', !all.length);
+  };
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); add(inp.value); }
+    else if (e.key === 'Backspace' && !inp.value && vals.length) { vals.pop(); draw(); setTimeout(() => inp.focus()); }
+  });
+  inp.addEventListener('input', () => {
+    if (inp.value.includes(',')) { inp.value.split(',').forEach(add); return; }
+    drawSugs();
+  });
+  inp.addEventListener('blur', () => { setTimeout(() => { if (inp.value.trim() && document.activeElement !== inp) add(inp.value); }, 150); });
+  box.addEventListener('click', e => { if (e.target === box) inp.focus(); });
+  box.append(inp);
+  draw();
+  wrap.append(box, sugs);
+  wrap.values = () => { if (inp.value.trim()) add(inp.value); return vals; };
+  return wrap;
+}
+
+/* ---------- media processing ---------- */
+function loadImage(url) { return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; }); }
+function canvasBlob(src, w, h, max = 480) {
+  const s = Math.min(1, max / Math.max(w, h));
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(w * s)); c.height = Math.max(1, Math.round(h * s));
+  c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+  return new Promise(r => c.toBlob(b => r(b), 'image/jpeg', 0.82));
+}
+async function imageInfo(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await loadImage(url);
+    const thumb = await canvasBlob(img, img.naturalWidth, img.naturalHeight);
+    return { thumb, w: img.naturalWidth, h: img.naturalHeight };
+  } catch { return { thumb: null }; } finally { URL.revokeObjectURL(url); }
+}
+function videoInfo(file) {
+  return new Promise(resolve => {
+    const url = URL.createObjectURL(file);
+    const v = document.createElement('video');
+    v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'auto';
+    let done = false;
+    const finish = r => { if (done) return; done = true; v.removeAttribute('src'); v.load(); URL.revokeObjectURL(url); resolve(r); };
+    v.onloadedmetadata = () => {
+      const t = isFinite(v.duration) ? Math.min(1.5, v.duration * 0.1) : 0.5;
+      try { v.currentTime = t; } catch { }
+    };
+    v.onseeked = async () => {
+      try {
+        const thumb = await canvasBlob(v, v.videoWidth, v.videoHeight);
+        finish({ thumb, w: v.videoWidth, h: v.videoHeight, dur: v.duration });
+      } catch { finish({ thumb: null, dur: v.duration }); }
+    };
+    v.onerror = () => finish({ thumb: null, dur: 0 });
+    setTimeout(() => finish({ thumb: null, dur: isFinite(v.duration) ? v.duration : 0 }), 12000);
+    v.src = url; v.load();
+  });
+}
+function placeholderThumb(isVid) {
+  const c = document.createElement('canvas'); c.width = c.height = 240;
+  const g = c.getContext('2d'); g.fillStyle = '#1a1a1c'; g.fillRect(0, 0, 240, 240);
+  g.fillStyle = '#5d5d63'; g.font = '600 26px -apple-system,sans-serif'; g.textAlign = 'center'; g.fillText(isVid ? 'VIDEO' : 'PHOTO', 120, 128);
+  return new Promise(r => c.toBlob(r, 'image/jpeg', 0.8));
+}
+
+/* ---------- editor ---------- */
+async function openEditor(postId) {
+  const existing = postId ? posts.find(p => p.id === postId) : null;
+  const items = existing ? existing.items.map(i => ({ ...i })) : [];  // {id,type,x,w,h,dur, _file?, _thumb?, _busy?}
+  const removed = [];
+  let postX = existing ? !!existing.x : xMode === 'only';
+  let fav = existing ? !!existing.fav : false;
+  let dateTouched = !!existing;
+
+  const strip = h('div', { class: 'strip' });
+  const dateIn = h('input', { type: 'date', class: 'field', value: existing ? (existing.date || '') : today(), onchange: () => dateTouched = true });
+  const creators = chipInput(existing ? existing.creators : filters.filter(f => f.type === 'creator').map(f => norm(f.value)), 'creator', 'Add creator…');
+  const tags = chipInput(existing ? existing.tags : filters.filter(f => f.type === 'tag').map(f => tagNorm(f.value)), 'tag', 'Add tag…');
+  const notesIn = h('textarea', { class: 'field', rows: '3', placeholder: 'Anything worth remembering (optional)', style: 'resize:none;line-height:1.4;display:block' });
+  notesIn.value = existing ? (existing.notes || '') : '';
+  const saveBtn = h('button', { class: 'tbtn pri', onclick: save }, existing ? 'Save' : 'Post');
+
+  const thumbSrc = it => it._thumbURL || thumbURL.get(it.id) || '';
+  const drawStrip = () => {
+    strip.innerHTML = '';
+    items.forEach((it, i) => {
+      const img = h('img', { alt: '' });
+      if (it._thumbURL) img.src = it._thumbURL; else if (!it._file) getThumb(it.id).then(u => u && (img.src = u));
+      const card = h('div', { class: 'mi' + (it.x || postX ? ' isx' : '') + (it._busy ? ' busy' : '') });
+      if (it._busy) { card.append(h('div', { class: 'spin' })); strip.append(card); return; }
+      card.append(img, h('div', { class: 'num' }, String(i + 1)));
+      if (it.type === 'video') card.append(h('div', { class: 'vd' }, '▶ ' + fmtDur(it.dur)));
+      card.append(h('button', { class: 'del', html: I.close, 'aria-label': 'Remove', onclick: () => { removed.push(...items.splice(i, 1).filter(x => !x._file)); drawStrip(); } }));
+      card.append(h('div', { class: 'ctl' },
+        h('button', { html: I.left, 'aria-label': 'Move left', style: i ? '' : 'visibility:hidden', onclick: () => { [items[i - 1], items[i]] = [items[i], items[i - 1]]; drawStrip(); } }),
+        h('button', { class: it.x ? 'xon' : '', 'aria-label': 'Toggle X', onclick: () => { it.x = !it.x; drawStrip(); } }, 'X'),
+        h('button', { html: I.right, 'aria-label': 'Move right', style: i < items.length - 1 ? '' : 'visibility:hidden', onclick: () => { [items[i + 1], items[i]] = [items[i], items[i + 1]]; drawStrip(); } })));
+      strip.append(card);
+    });
+    strip.append(h('button', { class: 'mi add', onclick: pickFiles }, h('div', null, h('div', { style: 'font-size:28px;line-height:1' }, '+'), 'Add photos', h('br'), '& videos')));
+    saveBtn.disabled = !items.length || items.some(i => i._busy);
+  };
+
+  function pickFiles() {
+    const fp = $('#filePick');
+    fp.value = '';
+    fp.onchange = async () => {
+      const files = [...fp.files];
+      if (!files.length) return;
+      const added = files.map(f => ({ id: uid(), type: isVideo(f) ? 'video' : 'image', x: false, _file: f, _busy: true, name: f.name }));
+      items.push(...added);
+      drawStrip();
+      if (!dateTouched && !existing) {
+        const oldest = Math.min(...files.map(f => f.lastModified || Date.now()));
+        dateIn.value = dateOf(oldest);
+      }
+      for (const it of added) {
+        const info = it.type === 'video' ? await videoInfo(it._file) : await imageInfo(it._file);
+        it._thumb = info.thumb || await placeholderThumb(it.type === 'video');
+        it._thumbURL = URL.createObjectURL(it._thumb);
+        it.w = info.w || 0; it.h = info.h || 0; if (info.dur) it.dur = info.dur;
+        it._busy = false;
+        drawStrip();
+      }
+    };
+    fp.click();
+  }
+
+  async function save() {
+    if (!items.length || items.some(i => i._busy)) return;
+    const newOnes = items.filter(i => i._file);
+    const prog = progress(newOnes.length ? `Encrypting ${newOnes.length} file${newOnes.length > 1 ? 's' : ''}…` : 'Saving…');
+    busyOps++;
+    try {
+      let n = 0;
+      for (const it of newOnes) {
+        const label = `${n + 1} of ${newOnes.length}${it.type === 'video' ? ' · videos take longer' : ''}`;
+        prog.set(n / newOnes.length, label);
+        await storeItem(it, f => prog.set((n + f) / newOnes.length, label));
+        thumbURL.set(it.id, it._thumbURL);
+        n++;
+      }
+      prog.set(1, '');
+      for (const it of removed) await removeItemData(it.id);
+      const clean = items.map(({ _file, _thumb, _thumbURL, _busy, name, ...rest }) => rest);
+      const p = existing || { id: uid(), created: Date.now() };
+      Object.assign(p, {
+        items: clean, x: postX, fav, date: dateIn.value || '', notes: notesIn.value.trim(),
+        creators: creators.values().map(norm).filter(Boolean),
+        tags: tags.values().map(tagNorm).filter(Boolean),
+        updated: Date.now(),
+      });
+      await savePost(p);
+      if (!existing) posts.push(p);
+      prog.close();
+      closePage('editor');
+      render();
+      if (!visItems(p).length) toast('Saved. It’s X, so it’s hidden right now');
+      else toast(existing ? 'Saved' : 'Posted');
+    } catch (err) {
+      prog.close();
+      for (const it of newOnes) removeItemData(it.id).catch(() => {});
+      openSheet('Couldn’t save', h('div', { style: 'color:var(--muted);text-align:center;padding:0 10px 16px' },
+        'Your phone may be low on storage, or iOS blocked the save. Free up space and try again.', h('br'), h('small', null, String(err && err.message || err))));
+    } finally { busyOps--; checkPendingLock(); }
+  }
+
+  const xSw = h('div', { class: 'sw' + (postX ? ' on' : '') });
+  const favSw = h('div', { class: 'sw' + (fav ? ' on' : '') });
+  favSw.style.setProperty('--x', 'var(--heart)');
+  const page = h('div', null,
+    h('div', { class: 'ptop' },
+      h('button', { class: 'tbtn', style: 'text-align:left', onclick: () => {
+        if (items.some(i => i._file)) confirmSheet('Discard changes?', 'New photos and videos you added won’t be saved.', 'Discard', () => closePage('editor'));
+        else closePage('editor');
+      } }, 'Cancel'),
+      h('h2', null, existing ? 'Edit post' : 'New post'),
+      saveBtn),
+    h('div', { class: 'pbody' },
+      h('div', { class: 'lbl', style: 'margin-top:4px' }, 'Photos & videos'),
+      strip,
+      h('div', { class: 'hint' }, 'Tap X on a photo to hide just that one. Use the arrows to change the order; the first one is the cover.'),
+      h('div', { class: 'lbl' }, 'Creators'), creators,
+      h('div', { class: 'lbl' }, 'Tags'), tags,
+      h('div', { class: 'lbl' }, 'Notes'), notesIn,
+      h('div', { class: 'lbl' }, 'Shoot date'), dateIn,
+      h('div', { class: 'lbl' }, 'Options'),
+      h('div', { class: 'card' },
+        h('button', { class: 'row', onclick: () => { postX = !postX; xSw.classList.toggle('on', postX); drawStrip(); } },
+          h('div', { class: 'grow' }, h('div', null, 'Whole post is X'), h('div', { class: 'sub' }, 'Hidden unless X is turned on')), xSw),
+        h('button', { class: 'row', onclick: () => { fav = !fav; favSw.classList.toggle('on', fav); } },
+          h('div', { class: 'grow' }, 'Favorite'), favSw)),
+      existing ? h('button', { class: 'btn sec wide', style: 'color:var(--heart);margin-top:28px', onclick: () => confirmSheet('Delete post?', 'This removes the post and its photos/videos from Folio.', 'Delete', async () => { closePage('editor'); await deletePost(existing.id); }) }, 'Delete post') : null));
+  drawStrip();
+  openPage('editor', page, true);
+  if (!existing) pickFiles();   // must run inside the tap so iOS opens the picker
+}
+
+function progress(title) {
+  const bar = h('i'); const pt = h('div', { class: 'pt' });
+  const el = h('div', { class: 'prog' }, h('div', { class: 'box' }, h('div', { style: 'font-weight:600' }, title), h('div', { class: 'barp' }, bar), pt));
+  document.body.append(el);
+  return { set: (f, t) => { bar.style.width = Math.round(f * 100) + '%'; if (t != null) pt.textContent = t; }, close: () => el.remove(), hide: () => { el.style.display = 'none'; }, show: () => { el.style.display = ''; }, title: t => el.querySelector('.box > div').textContent = t };
+}
+
+/* ---------- rename / merge creators & tags ---------- */
+function renameFlow(type, oldName) {
+  const inp = h('input', { class: 'field', value: type === 'tag' ? oldName : oldName, autocapitalize: type === 'tag' ? 'off' : 'words', autocorrect: 'off', style: 'background:var(--s2)' });
+  openSheet(type === 'tag' ? 'Rename tag' : 'Rename creator', h('div', null, inp,
+    h('div', { class: 'hint', style: 'margin-bottom:14px' }, 'If the new name already exists, the two are merged.'),
+    h('button', { class: 'btn wide', style: 'margin-top:0', onclick: async () => {
+      const nv = type === 'tag' ? tagNorm(inp.value) : norm(inp.value);
+      if (!nv) return;
+      await renameAll(type, oldName, nv);
+      closeSheet();
+      filters = filters.map(f => f.type === type && (type === 'tag' ? tagNorm(f.value) === tagNorm(oldName) : key(f.value) === key(oldName)) ? { type, value: nv } : f);
+      render(); toast('Renamed');
+    } }, 'Save'),
+    h('button', { class: 'btn sec wide', style: 'margin-top:10px;color:var(--heart)', onclick: () => {
+      closeSheet();
+      setTimeout(() => confirmSheet(`Remove ${type === 'tag' ? '#' + oldName : oldName}?`, `It will be removed from every post. The posts themselves stay.`, 'Remove', async () => {
+        await renameAll(type, oldName, null);
+        filters = filters.filter(f => !(f.type === type && (type === 'tag' ? tagNorm(f.value) === tagNorm(oldName) : key(f.value) === key(oldName))));
+        render(); toast('Removed');
+      }), 300);
+    } }, type === 'tag' ? 'Remove tag from all posts' : 'Remove creator from all posts')));
+}
+async function renameAll(type, oldName, newName) {
+  const field = type === 'tag' ? 'tags' : 'creators';
+  const k = type === 'tag' ? tagNorm : key;
+  for (const p of posts) {
+    if (!p[field].some(v => k(v) === k(oldName))) continue;
+    let arr = p[field].map(v => k(v) === k(oldName) ? newName : v).filter(Boolean);
+    const seen = new Set(); arr = arr.filter(v => { const kk = k(v); if (seen.has(kk)) return false; seen.add(kk); return true; });
+    p[field] = arr;
+    await savePost(p);
+  }
+}
+
+/* ---------- settings ---------- */
+async function openSettings() {
+  const body = h('div', { class: 'pbody' });
+  const page = h('div', null,
+    h('div', { class: 'ptop' }, h('button', { class: 'ibtn', html: I.back, onclick: () => closePage('settings') }), h('h2', null, 'Settings'), h('div', { style: 'width:40px' })),
+    body);
+  openPage('settings', page);
+
+  const lockLabel = s => s === 0 ? 'Immediately' : s === 60 ? 'After 1 minute' : 'After 5 minutes';
+  const lockVal = h('span', { class: 'val' }, lockLabel(settings.lockDelay));
+  body.append(
+    h('div', { class: 'lbl', style: 'margin-top:4px' }, 'Security'),
+    h('div', { class: 'card' },
+      h('button', { class: 'row', onclick: changePin }, h('div', { class: 'grow' }, 'Change passcode')),
+      h('button', { class: 'row', onclick: () => {
+        const o = (s) => h('button', { class: 'opt' + (settings.lockDelay === s ? ' sel' : ''), onclick: () => { settings.lockDelay = s; saveSettings(); lockVal.textContent = lockLabel(s); closeSheet(); } }, h('div', { class: 't' }, lockLabel(s)), h('div', { class: 'rad' }));
+        openSheet('Lock when I leave the app', h('div', null, o(0), o(60), o(300)));
+      } }, h('div', { class: 'grow' }, 'Auto-lock'), lockVal),
+      h('button', { class: 'row', onclick: () => lockNow() }, h('div', { class: 'grow' }, 'Lock now'))),
+    h('div', { class: 'hint' }, 'Everything in Folio is encrypted with your passcode (AES-256). X content always hides again when the app locks.'),
+
+    h('div', { class: 'lbl' }, 'Backup'),
+    h('div', { class: 'card' },
+      h('button', { class: 'row', onclick: exportBackup }, h('div', { class: 'grow' }, h('div', null, 'Export backup'), h('div', { class: 'sub' }, 'Encrypted. Save it to Files, iCloud Drive or a computer'))),
+      h('button', { class: 'row', onclick: importBackup }, h('div', { class: 'grow' }, h('div', null, 'Restore from backup'), h('div', { class: 'sub' }, 'Pick one or more .folio files')))),
+
+    h('div', { class: 'lbl' }, 'Creators & tags'),
+    h('div', { class: 'card' },
+      h('button', { class: 'row', onclick: () => manageList('creator') }, h('div', { class: 'grow' }, 'Manage creators'), h('span', { class: 'val' }, String(indexOf('creator').length))),
+      h('button', { class: 'row', onclick: () => manageList('tag') }, h('div', { class: 'grow' }, 'Manage tags'), h('span', { class: 'val' }, String(indexOf('tag').length)))),
+  );
+
+  const storageCard = h('div', { class: 'card' });
+  body.append(h('div', { class: 'lbl' }, 'Storage'), storageCard, h('div', { class: 'hint' }, `Folio ${VERSION} · Everything is stored only on this phone, inside this app. Deleting the app from your Home Screen deletes its data, so keep a backup.`));
+  let used = 0, quota = 0, persisted = false;
+  try { const e = await navigator.storage.estimate(); used = e.usage || 0; quota = e.quota || 0; } catch {}
+  try { persisted = await navigator.storage.persisted(); } catch {}
+  const all = posts.reduce((a, p) => a + p.items.length, 0);
+  storageCard.append(
+    h('div', { class: 'row' }, h('div', { class: 'grow' }, 'Posts'), h('span', { class: 'val' }, `${posts.length} · ${all} files`)),
+    h('div', { class: 'row' }, h('div', { class: 'grow' }, 'Space used'), h('span', { class: 'val' }, fmtBytes(used) + (quota ? ` of ${fmtBytes(quota)}` : ''))),
+    h('button', { class: 'row', onclick: async () => {
+      let ok = false; try { ok = await navigator.storage.persist(); } catch {}
+      toast(ok ? 'Storage is protected' : 'iOS didn’t allow it. Keep the app on your Home Screen and back up regularly');
+      if (ok) closePage('settings'), openSettings();
+    } }, h('div', { class: 'grow' }, h('div', null, 'Protected storage'), h('div', { class: 'sub' }, 'Asks iOS not to clear Folio’s data')), h('span', { class: 'val', style: persisted ? 'color:var(--ok)' : '' }, persisted ? 'On' : 'Off')));
+}
+
+async function changePin() {
+  if (!(await askPass('Current passcode', true, () => {}))) return;
+  createPass({ title: 'New passcode', over: true, onCancel: () => {}, onDone: async (v, kind) => {
+    // only the wrapped key changes; the library itself stays as it is
+    keyRec = { ...(await wrapDK(DK, v)), kid: keyRec.kid, kind, len: kind === 'pin' ? v.length : 0 };
+    await DB.put('meta', keyRec, 'key');
+    toast('Passcode changed. Older backups still need the old one');
+  } });
+}
+
+function manageList(type) {
+  // full list (including X) — requires X visible? show only visible names to avoid leaking
+  const list = indexOf(type);
+  const body = h('div');
+  if (!list.length) body.append(h('div', { style: 'color:var(--muted);text-align:center;padding:10px 0 20px' }, 'Nothing yet.'));
+  list.forEach(it => body.append(h('button', { class: 'res', onclick: () => { closeSheet(); setTimeout(() => renameFlow(type, it.name), 300); } },
+    type === 'tag' ? h('div', { class: 'rtag' }, '#') : h('div', { class: 'mini' }, initial(it.name)),
+    h('div', null, h('div', { class: 'n' }, type === 'tag' ? '#' + it.name : it.name), h('div', { class: 'c2' }, `${it.count} post${it.count > 1 ? 's' : ''} · tap to rename`)))));
+  if (xMode === 'off') body.append(h('div', { class: 'hint', style: 'text-align:center' }, 'Names used only on X posts appear when X is on.'));
+  openSheet(type === 'tag' ? 'Tags' : 'Creators', body);
+}
+
+/* ---------- backup ----------
+   File format (.folio v2): 16 ASCII digits = header length, then a JSON header, then the
+   encrypted records exactly as stored. Nothing is decrypted to make a backup, so a backup
+   can only be restored with the passcode Folio had when it was made.
+   Large libraries are split into parts of about 1.5 GB so iPhone can save them. */
+const PART_MAX = 1.5 * 1024 ** 3;
+async function exportBackup() {
+  if (!(await askPass('Confirm to export', true, () => {}))) return;
+  busyOps++;
+  const prog = progress('Preparing backup…');
+  try {
+    const groups = [];
+    for (const p of posts) {
+      const ents = []; let size = 0;
+      const add = (s, k, blob) => { if (blob) { ents.push({ s, k, blob }); size += blob.size; } };
+      const rec = await DB.get('posts', p.id);
+      add('posts', p.id, rec && rec.d);
+      for (const it of p.items) {
+        add('thumbs', it.id, await DB.get('thumbs', it.id));
+        for (let i = 0; i < (it.n || 1); i++) add('media', `${it.id}/${i}`, await DB.get('media', `${it.id}/${i}`));
+      }
+      groups.push({ ents, size });
+    }
+    const parts = []; let cur = { groups: [], size: 0 };
+    for (const g of groups) {
+      if (cur.groups.length && cur.size + g.size > PART_MAX) { parts.push(cur); cur = { groups: [], size: 0 }; }
+      cur.groups.push(g); cur.size += g.size;
+    }
+    parts.push(cur);
+    const stamp = today();
+    const files = parts.map((part, i) => {
+      let off = 0; const index = [], blobs = [];
+      for (const g of part.groups) for (const e of g.ents) { index.push({ s: e.s, k: e.k, offset: off, size: e.blob.size }); blobs.push(e.blob); off += e.blob.size; }
+      const hb = enc.encode(JSON.stringify({ app: 'folio', v: 2, part: i + 1, of: parts.length, created: Date.now(), key: keyRec, files: index }));
+      const name = `Folio-backup-${stamp}` + (parts.length > 1 ? `-part${i + 1}of${parts.length}` : '') + '.folio';
+      return { name, blob: new Blob([String(hb.length).padStart(16, '0'), hb, ...blobs], { type: 'application/octet-stream' }) };
+    });
+    prog.close();
+    const body = h('div', null, h('div', { style: 'color:var(--muted);text-align:center;margin:-6px 6px 14px;font-size:14px' },
+      (files.length > 1 ? `Your library is split into ${files.length} files. Save each one (choose “Save to Files”).` : 'Tap Save, then choose “Save to Files”.') +
+      ' The backup is encrypted. Restoring it needs your current passcode.'));
+    files.forEach(f => {
+      const row = h('div', { class: 'opt', style: 'cursor:default' },
+        h('div', { style: 'flex:1;min-width:0' }, h('div', { class: 't', style: 'word-break:break-all;font-size:13px' }, f.name), h('div', { class: 'd' }, fmtBytes(f.blob.size))));
+      const btn = h('button', { class: 'btn', style: 'margin:0;height:36px;padding:0 14px;flex:none' }, 'Save');
+      btn.onclick = async () => {
+        const file = new File([f.blob], f.name, { type: 'application/octet-stream' });
+        try {
+          if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); btn.textContent = 'Saved ✓'; return; }
+        } catch (e) { if (e && e.name === 'AbortError') return; }
+        const a = h('a', { href: URL.createObjectURL(f.blob), download: f.name }); document.body.append(a); a.click(); a.remove();
+        btn.textContent = 'Saved ✓';
+      };
+      row.append(btn); body.append(row);
+    });
+    openSheet('Backup ready', body);
+  } catch (e) { prog.close(); toast('Backup failed: ' + (e.message || e)); }
+  finally { busyOps--; checkPendingLock(); }
+}
+
+function askBackupPass(rec) {
+  return new Promise(resolve => passPrompt({
+    kind: rec.kind, len: rec.len, min: rec.kind === 'pass' ? 1 : 6, over: true,
+    title: 'Backup passcode', sub: 'Enter the passcode Folio had when this backup was made',
+    onCancel: () => resolve(null),
+    onSubmit: async v => { const k = await unwrapDK(rec, v); if (k) { resolve(k); return true; } return 'Wrong passcode'; }
+  }));
+}
+
+function importBackup() {
+  const inp = $('#backupPick'); inp.value = '';
+  inp.onchange = async () => {
+    const files = [...inp.files]; if (!files.length) return;
+    busyOps++;
+    const prog = progress('Restoring…');
+    const keys = {}; let restored = 0;
+    try {
+      for (let fi = 0; fi < files.length; fi++) {
+        const f = files[fi];
+        const len = parseInt(await f.slice(0, 16).text(), 10);
+        if (!len) throw new Error(`${f.name} isn’t a Folio backup`);
+        const header = JSON.parse(await f.slice(16, 16 + len).text());
+        if (header.app !== 'folio') throw new Error(`${f.name} isn’t a Folio backup`);
+        if (header.v !== 2 || !header.key) throw new Error(`${f.name} is from an older Folio version`);
+        // same library key: copy records as they are. Different key: decrypt with the backup's key, re-encrypt with ours.
+        const same = header.key.kid === keyRec.kid;
+        let bk = null;
+        if (!same) {
+          bk = keys[header.key.kid];
+          if (!bk) {
+            prog.hide(); bk = await askBackupPass(header.key); prog.show();
+            if (!bk) throw new Error('cancelled');
+            keys[header.key.kid] = bk;
+          }
+        }
+        const base = 16 + len;
+        let n = 0;
+        for (const e of header.files) {
+          prog.set(n / header.files.length, `File ${fi + 1} of ${files.length} · ${n + 1}/${header.files.length}`);
+          let blob = f.slice(base + e.offset, base + e.offset + e.size);
+          if (!same) blob = await sealBlob(await openBlob(blob, bk));
+          if (e.s === 'posts') { await DB.put('posts', { id: e.k, d: blob }); restored++; }
+          else if (e.s === 'media' || e.s === 'thumbs') await DB.put(e.s, blob, e.k);
+          n++;
+        }
+      }
+      prog.close();
+    } catch (e) {
+      prog.close();
+      if (e.message !== 'cancelled') toast('Restore failed: ' + (e.message || e));
+    } finally {
+      for (const u of thumbURL.values()) URL.revokeObjectURL(u);
+      thumbURL.clear();
+      if (DK) posts = await loadPosts();
+      busyOps--;
+      if (restored) { closePage('settings'); toast(`Restored ${restored} post${restored === 1 ? '' : 's'}`); }
+      render();
+      checkPendingLock();
+    }
+  };
+  inp.click();
+}
+
+/* ---------- boot ---------- */
+async function boot() {
+  $('#searchBtn').innerHTML = I.search;
+  $('#addBtn').innerHTML = I.plus;
+  $('#menuBtn').innerHTML = I.menu;
+  $('#xbtn').onclick = openXMenu;
+  $('#searchBtn').onclick = openSearch;
+  $('#addBtn').onclick = () => openEditor();
+  $('#menuBtn').onclick = openSettings;
+  $('#brand').onclick = () => { filters = []; favOnly = false; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  if (!window.crypto || !crypto.subtle) {
+    document.body.append(h('div', { class: 'empty' }, h('h4', null, 'Secure connection needed'), h('div', null, 'Open Folio from its https:// address.')));
+    return;
+  }
+  try {
+    await DB.open();
+  } catch (e) {
+    document.body.append(h('div', { class: 'empty' }, h('h4', null, 'Storage unavailable'), h('div', null, 'Open Folio from your Home Screen (not a private Safari tab).')));
+    return;
+  }
+  settings = { ...settings, ...(await DB.get('meta', 'settings') || {}) };
+  fails = (await DB.get('meta', 'fails')) || fails;
+  showLock();
+  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+boot();
+</script>
+</body>
+</html>
